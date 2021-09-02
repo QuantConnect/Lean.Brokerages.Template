@@ -1,4 +1,5 @@
-![lean-brokerage-template](https://cdn.quantconnect.com/i/tu/lean-brokerage-template.png)
+![lean-brokerage-template](https://user-images.githubusercontent.com/18473240/131904120-f67dab9c-cc6f-4c08-83e9-5d3ffafdb85d.png)
+
 
 # Lean.Brokerages.Template
 
