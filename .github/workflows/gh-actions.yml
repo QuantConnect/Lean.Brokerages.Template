@@ -15,12 +15,22 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Checkout Lean
+      - name: Checkout Lean Same Branch
+        id: lean-same-branch
         uses: actions/checkout@v2
+        continue-on-error: true
         with:
           ref: ${{ github.ref }}
           repository: QuantConnect/Lean
           path: Lean
+
+      - name: Checkout Lean Master
+        if: steps.lean-same-branch.outcome != 'success'
+        uses: actions/checkout@v2
+        with:
+          repository: QuantConnect/Lean
+          path: Lean
+
       - name: Move Lean
         run: mv Lean ../Lean
 
