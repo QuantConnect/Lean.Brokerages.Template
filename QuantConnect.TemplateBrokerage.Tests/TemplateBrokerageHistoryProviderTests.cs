@@ -15,6 +15,12 @@
 
 using System;
 using NUnit.Framework;
+using QuantConnect.Data;
+using QuantConnect.Tests;
+using QuantConnect.Logging;
+using QuantConnect.Securities;
+using QuantConnect.Data.Market;
+using QuantConnect.Lean.Engine.HistoricalData;
 
 namespace QuantConnect.TemplateBrokerage.Tests
 {
@@ -27,8 +33,14 @@ namespace QuantConnect.TemplateBrokerage.Tests
             {
                 return new[]
                 {
-                    // valid parameters
-                    new TestCaseData()
+                    // valid parameters, example:
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Tick, TimeSpan.FromMinutes(1), TickType.Quote, typeof(Tick), false),
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Minute, TimeSpan.FromMinutes(10), TickType.Quote, typeof(QuoteBar), false),
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Daily, TimeSpan.FromDays(10), TickType.Quote, typeof(QuoteBar), false),
+
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Tick, TimeSpan.FromMinutes(1), TickType.Trade, typeof(Tick), false),
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Minute, TimeSpan.FromMinutes(10), TickType.Trade, typeof(TradeBar), false),
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Daily, TimeSpan.FromDays(10), TickType.Trade, typeof(TradeBar), false),
                 };
             }
         }
@@ -36,7 +48,64 @@ namespace QuantConnect.TemplateBrokerage.Tests
         [Test, TestCaseSource(nameof(TestParameters))]
         public void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, Type dataType, bool throwsException)
         {
+            TestDelegate test = () =>
+            {
+                var brokerage = new TemplateBrokerage(null);
 
+                var historyProvider = new BrokerageHistoryProvider();
+                historyProvider.SetBrokerage(brokerage);
+                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null,
+                    null, null, null, null,
+                    false, null));
+
+                var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
+                var now = DateTime.UtcNow;
+                var requests = new[]
+                {
+                    new HistoryRequest(now.Add(-period),
+                        now,
+                        dataType,
+                        symbol,
+                        resolution,
+                        marketHoursDatabase.GetExchangeHours(symbol.ID.Market, symbol, symbol.SecurityType),
+                        marketHoursDatabase.GetDataTimeZone(symbol.ID.Market, symbol, symbol.SecurityType),
+                        resolution,
+                        false,
+                        false,
+                        DataNormalizationMode.Adjusted,
+                        tickType)
+                };
+
+                foreach (var slice in historyProvider.GetHistory(requests, TimeZones.Utc))
+                {
+                    if (resolution == Resolution.Tick)
+                    {
+                        foreach (var tick in slice.Ticks[symbol])
+                        {
+                            Log.Trace($"{tick}");
+                        }
+                    }
+                    else if(slice.QuoteBars.TryGetValue(symbol, out var quoteBar))
+                    {
+                        Log.Trace($"{quoteBar}");
+                    }
+                    else if(slice.Bars.TryGetValue(symbol, out var tradeBar))
+                    {
+                        Log.Trace($"{tradeBar}");
+                    }
+                }
+
+                Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);
+            };
+
+            if (throwsException)
+            {
+                Assert.Throws<ArgumentException>(test);
+            }
+            else
+            {
+                Assert.DoesNotThrow(test);
+            }
         }
     }
 }

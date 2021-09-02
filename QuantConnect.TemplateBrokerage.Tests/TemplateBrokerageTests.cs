@@ -14,6 +14,7 @@
 */
 
 using NUnit.Framework;
+using QuantConnect.Tests;
 using QuantConnect.Interfaces;
 using QuantConnect.Securities;
 using QuantConnect.Tests.Brokerages;
@@ -21,16 +22,10 @@ using QuantConnect.Tests.Brokerages;
 namespace QuantConnect.TemplateBrokerage.Tests
 {
     [TestFixture, Ignore("Not implemented")]
-    public class TemplateBrokerageTests : BrokerageTests
+    public partial class TemplateBrokerageTests : BrokerageTests
     {
         protected override Symbol Symbol { get; }
         protected override SecurityType SecurityType { get; }
-
-        [Test]
-        public void SampleTest()
-        {
-
-        }
 
         protected override IBrokerage CreateBrokerage(IOrderProvider orderProvider, ISecurityProvider securityProvider)
         {
@@ -44,6 +39,64 @@ namespace QuantConnect.TemplateBrokerage.Tests
         protected override decimal GetAskPrice(Symbol symbol)
         {
             throw new System.NotImplementedException();
+        }
+
+
+        /// <summary>
+        /// Provides the data required to test each order type in various cases
+        /// </summary>
+        private static TestCaseData[] OrderParameters()
+        {
+            return new[]
+            {
+                new TestCaseData(new MarketOrderTestParameters(Symbols.BTCUSD)).SetName("MarketOrder"),
+                new TestCaseData(new LimitOrderTestParameters(Symbols.BTCUSD, 10000m, 0.01m)).SetName("LimitOrder"),
+                new TestCaseData(new StopMarketOrderTestParameters(Symbols.BTCUSD, 10000m, 0.01m)).SetName("StopMarketOrder"),
+                new TestCaseData(new StopLimitOrderTestParameters(Symbols.BTCUSD, 10000m, 0.01m)).SetName("StopLimitOrder"),
+                new TestCaseData(new LimitIfTouchedOrderTestParameters(Symbols.BTCUSD, 10000m, 0.01m)).SetName("LimitIfTouchedOrder")
+            };
+        }
+
+        [Test, TestCaseSource(nameof(OrderParameters))]
+        public override void CancelOrders(OrderTestParameters parameters)
+        {
+            base.CancelOrders(parameters);
+        }
+
+        [Test, TestCaseSource(nameof(OrderParameters))]
+        public override void LongFromZero(OrderTestParameters parameters)
+        {
+            base.LongFromZero(parameters);
+        }
+
+        [Test, TestCaseSource(nameof(OrderParameters))]
+        public override void CloseFromLong(OrderTestParameters parameters)
+        {
+            base.CloseFromLong(parameters);
+        }
+
+        [Test, TestCaseSource(nameof(OrderParameters))]
+        public override void ShortFromZero(OrderTestParameters parameters)
+        {
+            base.ShortFromZero(parameters);
+        }
+
+        [Test, TestCaseSource(nameof(OrderParameters))]
+        public override void CloseFromShort(OrderTestParameters parameters)
+        {
+            base.CloseFromShort(parameters);
+        }
+
+        [Test, TestCaseSource(nameof(OrderParameters))]
+        public override void ShortFromLong(OrderTestParameters parameters)
+        {
+            base.ShortFromLong(parameters);
+        }
+
+        [Test, TestCaseSource(nameof(OrderParameters))]
+        public override void LongFromShort(OrderTestParameters parameters)
+        {
+            base.LongFromShort(parameters);
         }
     }
 }

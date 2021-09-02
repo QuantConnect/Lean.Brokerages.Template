@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Linq;
 using QuantConnect.Data;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
@@ -27,6 +28,9 @@ namespace QuantConnect.TemplateBrokerage
     [BrokerageFactory(typeof(TemplateBrokerageFactory))]
     public class TemplateBrokerage : Brokerage, IDataQueueHandler, IDataQueueUniverseProvider
     {
+        private readonly IDataAggregator _aggregator;
+        private readonly EventBasedDataQueueHandlerSubscriptionManager _subscriptionManager;
+
         /// <summary>
         /// Returns true if we're currently connected to the broker
         /// </summary>
@@ -35,9 +39,22 @@ namespace QuantConnect.TemplateBrokerage
         /// <summary>
          /// Creates a new instance
          /// </summary>
-         /// <param name="name">The brokerage name</param>
-        public TemplateBrokerage() : base("TemplateBrokerage")
+        /// <param name="aggregator">consolidate ticks</param>
+        public TemplateBrokerage(IDataAggregator aggregator) : base("TemplateBrokerage")
         {
+            _aggregator = aggregator;
+            _subscriptionManager = new EventBasedDataQueueHandlerSubscriptionManager();
+            _subscriptionManager.SubscribeImpl += (s, t) => Subscribe(s);
+            _subscriptionManager.UnsubscribeImpl += (s, t) => Unsubscribe(s);
+
+            // Useful for some brokerages:
+
+            // Brokerage helper class to lock websocket message stream while executing an action, for example placing an order
+            // avoid race condition with placing an order and getting filled events before finished placing
+            // _messageHandler = new BrokerageConcurrentMessageHandler<>();
+
+            // Rate gate limiter useful for API/WS calls
+            // _connectionRateLimiter = new RateGate();
         }
 
         #region IDataQueueHandler
@@ -50,7 +67,15 @@ namespace QuantConnect.TemplateBrokerage
         /// <returns>The new enumerator for this subscription request</returns>
         public IEnumerator<BaseData> Subscribe(SubscriptionDataConfig dataConfig, EventHandler newDataAvailableHandler)
         {
-            throw new NotImplementedException();
+            if (!CanSubscribe(dataConfig.Symbol))
+            {
+                return Enumerable.Empty<BaseData>().GetEnumerator();
+            }
+
+            var enumerator = _aggregator.Add(dataConfig, newDataAvailableHandler);
+            _subscriptionManager.Subscribe(dataConfig);
+
+            return enumerator;
         }
 
         /// <summary>
@@ -59,7 +84,8 @@ namespace QuantConnect.TemplateBrokerage
         /// <param name="dataConfig">Subscription config to be removed</param>
         public void Unsubscribe(SubscriptionDataConfig dataConfig)
         {
-            throw new NotImplementedException();
+            _subscriptionManager.Unsubscribe(dataConfig);
+            _aggregator.Remove(dataConfig);
         }
 
         /// <summary>
@@ -177,5 +203,33 @@ namespace QuantConnect.TemplateBrokerage
         }
 
         #endregion
+
+        private bool CanSubscribe(Symbol symbol)
+        {
+            if (symbol.Value.IndexOfInvariant("universe", true) != -1)
+            {
+                return false;
+            }
+
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Adds the specified symbols to the subscription
+        /// </summary>
+        /// <param name="symbols">The symbols to be added keyed by SecurityType</param>
+        private bool Subscribe(IEnumerable<Symbol> symbols)
+        {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Removes the specified symbols to the subscription
+        /// </summary>
+        /// <param name="symbols">The symbols to be removed keyed by SecurityType</param>
+        private bool Unsubscribe(IEnumerable<Symbol> symbols)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
