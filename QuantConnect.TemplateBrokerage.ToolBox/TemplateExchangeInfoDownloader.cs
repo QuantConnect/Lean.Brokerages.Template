@@ -13,32 +13,28 @@
  * limitations under the License.
 */
 
-using QuantConnect.Configuration;
 using QuantConnect.ToolBox;
-using System;
+using System.Collections.Generic;
 
 namespace QuantConnect.TemplateBrokerage.ToolBox
 {
-    static class Program
+    /// <summary>
+    /// Template Brokerage implementation of <see cref="IExchangeInfoDownloader"/>
+    /// </summary>
+    public class TemplateExchangeInfoDownloader : IExchangeInfoDownloader
     {
-        static void Main(string[] args)
-        {
-            var optionsObject = ToolboxArgumentParser.ParseArguments(args);
-            if (!optionsObject.TryGetValue("app", out var targetApp))
-            {
-                Environment.Exit(0);
-            }
+        /// <summary>
+        /// Market
+        /// </summary>
+        public string Market => throw new System.NotImplementedException();
 
-            var targetAppName = targetApp.ToString();
-            if (targetAppName.Contains("download") || targetAppName.Contains("dl"))
-            {
-                var downloader = new TemplateBrokerageDownloader();
-            }
-            else if (targetAppName.Contains("updater") || targetAppName.EndsWith("spu"))
-            {
-                new ExchangeInfoUpdater(new TemplateExchangeInfoDownloader())
-                    .Run();
-            }
+        /// <summary>
+        /// Get exchange info coma-separated data
+        /// </summary>
+        /// <returns>Enumerable of exchange info for this market</returns>
+        public IEnumerable<string> Get()
+        {
+            throw new System.NotImplementedException();
         }
     }
 }
