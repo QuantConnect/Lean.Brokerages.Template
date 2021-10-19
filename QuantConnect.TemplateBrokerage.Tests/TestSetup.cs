@@ -28,8 +28,8 @@ namespace QuantConnect.TemplateBrokerage.Tests
         [OneTimeSetUp]
         public void SetUp()
         {
-            Log.Trace($"TestSetup(): starting...");
-            Log.LogHandler = new ConsoleLogHandler();
+            Log.LogHandler = new CompositeLogHandler();
+            Log.Trace("TestSetup(): starting...");
             ReloadConfiguration();
         }
 

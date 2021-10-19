@@ -17,9 +17,13 @@ using NUnit.Framework;
 
 namespace QuantConnect.TemplateBrokerage.Tests
 {
-    [TestFixture, Ignore("Not implemented")]
+    [TestFixture]
     public class TemplateBrokerageAdditionalTests
     {
-
+        [Test]
+        public void ExampleTest()
+        {
+            Assert.Pass("Not implemented");
+        }
     }
 }
