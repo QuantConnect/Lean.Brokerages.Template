@@ -22,18 +22,15 @@ using QuantConnect.Configuration;
 
 namespace QuantConnect.TemplateBrokerage.Tests
 {
-    [SetUpFixture]
+    [TestFixture]
     public class TestSetup
     {
-        [OneTimeSetUp]
-        public void SetUp()
+        [Test, TestCaseSource(nameof(TestParameters))]
+        public void TestSetupCase()
         {
-            Log.LogHandler = new CompositeLogHandler();
-            Log.Trace("TestSetup(): starting...");
-            ReloadConfiguration();
         }
 
-        private static void ReloadConfiguration()
+        public static void ReloadConfiguration()
         {
             // nunit 3 sets the current folder to a temp folder we need it to be the test bin output folder
             var dir = TestContext.CurrentContext.TestDirectory;
@@ -59,6 +56,22 @@ namespace QuantConnect.TemplateBrokerage.Tests
 
             // resets the version among other things
             Globals.Reset();
+        }
+
+        private static void SetUp()
+        {
+            Log.LogHandler = new CompositeLogHandler();
+            Log.Trace("TestSetup(): starting...");
+            ReloadConfiguration();
+        }
+
+        private static TestCaseData[] TestParameters
+        {
+            get
+            {
+                SetUp();
+                return new [] { new TestCaseData() };
+            }
         }
     }
 }
