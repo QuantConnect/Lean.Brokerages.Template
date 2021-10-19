@@ -4,14 +4,15 @@ on:
   push:
     branches: ['*']
     tags: ['*']
-  pull_request:
-    branches: [master]
 
 jobs:
   build:
     runs-on: ubuntu-20.04
     container:
         image: quantconnect/lean:foundation
+    env:
+      QC_TEMPLATE_BROKERAGE_KEY: ${{ secrets.TEMPLATE_BROKERAGE_KEY }}
+      QC_TEMPLATE_BROKERAGE_SECRET: ${{ secrets.TEMPLATE_BROKERAGE_SECRET }}
     steps:
       - uses: actions/checkout@v2
 
