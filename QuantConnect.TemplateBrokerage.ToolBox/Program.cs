@@ -16,6 +16,7 @@
 using QuantConnect.Configuration;
 using QuantConnect.ToolBox;
 using System;
+using static QuantConnect.Configuration.ApplicationParser;
 
 namespace QuantConnect.TemplateBrokerage.ToolBox
 {
@@ -24,9 +25,14 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
         static void Main(string[] args)
         {
             var optionsObject = ToolboxArgumentParser.ParseArguments(args);
+            if (optionsObject.Count == 0)
+            {
+                PrintMessageAndExit();
+            }
+
             if (!optionsObject.TryGetValue("app", out var targetApp))
             {
-                Environment.Exit(0);
+                PrintMessageAndExit(1, "ERROR: --app value is required");
             }
 
             var targetAppName = targetApp.ToString();
@@ -38,6 +44,9 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             {
                 new ExchangeInfoUpdater(new TemplateExchangeInfoDownloader())
                     .Run();
+            } else
+            {
+                PrintMessageAndExit(1, "ERROR: Unrecognized --app value");
             }
         }
     }
