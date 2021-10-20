@@ -13,9 +13,8 @@
  * limitations under the License.
 */
 
-using QuantConnect.Configuration;
 using QuantConnect.ToolBox;
-using System;
+using QuantConnect.Configuration;
 using static QuantConnect.Configuration.ApplicationParser;
 
 namespace QuantConnect.TemplateBrokerage.ToolBox
@@ -44,7 +43,8 @@ namespace QuantConnect.TemplateBrokerage.ToolBox
             {
                 new ExchangeInfoUpdater(new TemplateExchangeInfoDownloader())
                     .Run();
-            } else
+            }
+            else
             {
                 PrintMessageAndExit(1, "ERROR: Unrecognized --app value");
             }
