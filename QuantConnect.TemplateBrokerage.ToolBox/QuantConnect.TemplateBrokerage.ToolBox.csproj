@@ -16,6 +16,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\Lean\Common\QuantConnect.csproj" />
+      <ProjectReference Include="..\..\Lean\ToolBox\QuantConnect.ToolBox.csproj" />
     </ItemGroup>
 
 </Project>
