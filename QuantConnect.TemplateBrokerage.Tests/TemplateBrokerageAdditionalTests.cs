@@ -20,6 +20,5 @@ namespace QuantConnect.TemplateBrokerage.Tests
     [TestFixture, Ignore("Not implemented")]
     public class TemplateBrokerageAdditionalTests
     {
-
     }
 }
