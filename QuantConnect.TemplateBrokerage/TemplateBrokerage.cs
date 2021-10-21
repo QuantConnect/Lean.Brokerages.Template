@@ -16,6 +16,7 @@
 using System;
 using System.Linq;
 using QuantConnect.Data;
+using QuantConnect.Util;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
 using QuantConnect.Interfaces;
@@ -35,6 +36,15 @@ namespace QuantConnect.TemplateBrokerage
         /// Returns true if we're currently connected to the broker
         /// </summary>
         public override bool IsConnected { get; }
+
+        /// <summary>
+        /// Parameterless constructor for brokerage
+        /// </summary>
+        /// <remarks>This parameterless constructor is required for brokerages implementing <see cref="IDataQueueHandler"/></remarks>
+        public TemplateBrokerage()
+            : this(Composer.Instance.GetPart<IDataAggregator>())
+        {
+        }
 
         /// <summary>
          /// Creates a new instance
