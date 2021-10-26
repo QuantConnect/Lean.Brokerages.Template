@@ -14,11 +14,19 @@
 */
 
 using NUnit.Framework;
+using QuantConnect.Util;
+using QuantConnect.Interfaces;
 
 namespace QuantConnect.TemplateBrokerage.Tests
 {
-    [TestFixture, Ignore("Not implemented")]
+    [TestFixture]
     public class TemplateBrokerageAdditionalTests
     {
+        [Test]
+        public void ParameterlessConstructorComposerUsage()
+        {
+            var brokerage = Composer.Instance.GetExportedValueByTypeName<IDataQueueHandler>("TemplateBrokerage");
+            Assert.IsNotNull(brokerage);
+        }
     }
 }
