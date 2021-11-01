@@ -14,6 +14,7 @@
 */
 
 using System;
+using System.Linq;
 using NUnit.Framework;
 using QuantConnect.Data;
 using QuantConnect.Tests;
@@ -76,7 +77,8 @@ namespace QuantConnect.TemplateBrokerage.Tests
                         tickType)
                 };
 
-                foreach (var slice in historyProvider.GetHistory(requests, TimeZones.Utc))
+                var historyArray = historyProvider.GetHistory(requests, TimeZones.Utc).ToArray();
+                foreach (var slice in historyArray)
                 {
                     if (resolution == Resolution.Tick)
                     {
@@ -93,6 +95,16 @@ namespace QuantConnect.TemplateBrokerage.Tests
                     {
                         Log.Trace($"{tradeBar}");
                     }
+                }
+
+                if (historyProvider.DataPointCount > 0)
+                {
+                    // Ordered by time
+                    Assert.That(historyArray, Is.Ordered.By("Time"));
+
+                    // No repeating bars
+                    var timesArray = historyArray.Select(x => x.Time).ToArray();
+                    Assert.AreEqual(timesArray.Length, timesArray.Distinct().Count());
                 }
 
                 Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);
