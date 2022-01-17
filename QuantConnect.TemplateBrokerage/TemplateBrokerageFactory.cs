@@ -36,7 +36,10 @@ namespace QuantConnect.TemplateBrokerage
         /// </remarks>
         public override Dictionary<string, string> BrokerageData { get; }
 
-        public TemplateBrokerageFactory(Type brokerageType) : base(brokerageType)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TemplateBrokerageFactory"/> class
+        /// </summary>
+        public TemplateBrokerageFactory() : base(typeof(TemplateBrokerage))
         {
         }
 
