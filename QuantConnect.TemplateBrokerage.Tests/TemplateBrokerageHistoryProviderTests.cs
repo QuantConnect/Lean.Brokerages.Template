@@ -84,16 +84,16 @@ namespace QuantConnect.TemplateBrokerage.Tests
                     {
                         foreach (var tick in slice.Ticks[symbol])
                         {
-                            Log.Trace($"{tick}");
+                            Log.Debug($"{tick}");
                         }
                     }
                     else if(slice.QuoteBars.TryGetValue(symbol, out var quoteBar))
                     {
-                        Log.Trace($"{quoteBar}");
+                        Log.Debug($"{quoteBar}");
                     }
                     else if(slice.Bars.TryGetValue(symbol, out var tradeBar))
                     {
-                        Log.Trace($"{tradeBar}");
+                        Log.Debug($"{tradeBar}");
                     }
                 }
 
