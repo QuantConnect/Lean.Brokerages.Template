@@ -216,7 +216,7 @@ namespace QuantConnect.TemplateBrokerage
 
         private bool CanSubscribe(Symbol symbol)
         {
-            if (symbol.Value.IndexOfInvariant("universe", true) != -1)
+            if (symbol.Value.IndexOfInvariant("universe", true) != -1 || symbol.IsCanonical())
             {
                 return false;
             }
