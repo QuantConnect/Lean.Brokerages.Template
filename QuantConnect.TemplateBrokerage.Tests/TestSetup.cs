@@ -63,6 +63,7 @@ namespace QuantConnect.TemplateBrokerage.Tests
             Log.LogHandler = new CompositeLogHandler();
             Log.Trace("TestSetup(): starting...");
             ReloadConfiguration();
+            Log.DebuggingEnabled = Config.GetBool("debug-mode");
         }
 
         private static TestCaseData[] TestParameters
