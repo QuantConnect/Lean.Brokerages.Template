@@ -62,7 +62,7 @@ namespace QuantConnect.TemplateBrokerage.Tests
             {
                 ProcessFeed(brokerage.Subscribe(config, (s, e) => { }),
                     cancelationToken,
-                    (baseData) => { if (baseData != null) { Log.Trace("{baseData}"); }
+                    (baseData) => { if (baseData != null) { Log.Trace($"{baseData}"); }
                     });
             }
 
