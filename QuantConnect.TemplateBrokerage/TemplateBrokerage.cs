@@ -47,8 +47,8 @@ namespace QuantConnect.TemplateBrokerage
         }
 
         /// <summary>
-         /// Creates a new instance
-         /// </summary>
+        /// Creates a new instance
+        /// </summary>
         /// <param name="aggregator">consolidate ticks</param>
         public TemplateBrokerage(IDataAggregator aggregator) : base("TemplateBrokerage")
         {
@@ -239,6 +239,22 @@ namespace QuantConnect.TemplateBrokerage
         /// <param name="symbols">The symbols to be removed keyed by SecurityType</param>
         private bool Unsubscribe(IEnumerable<Symbol> symbols)
         {
+            throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the history for the requested symbols
+        /// <see cref="IBrokerage.GetHistory(Data.HistoryRequest)"/>
+        /// </summary>
+        /// <param name="request">The historical data request</param>
+        /// <returns>An enumerable of bars covering the span specified in the request</returns>
+        public override IEnumerable<BaseData> GetHistory(Data.HistoryRequest request)
+        {
+            if (!CanSubscribe(request.Symbol))
+            {
+                return null; // Should consistently return null instead of an empty enumerable
+            }
+
             throw new NotImplementedException();
         }
     }
