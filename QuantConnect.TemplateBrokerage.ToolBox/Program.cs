@@ -17,7 +17,7 @@ using QuantConnect.ToolBox;
 using QuantConnect.Configuration;
 using static QuantConnect.Configuration.ApplicationParser;
 
-namespace QuantConnect.TemplateBrokerage.ToolBox
+namespace QuantConnect.Brokerages.Template.ToolBox
 {
     static class Program
     {

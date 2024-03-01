@@ -14,17 +14,15 @@
 */
 
 using System;
-using System.Linq;
 using QuantConnect.Data;
 using QuantConnect.Util;
 using QuantConnect.Orders;
 using QuantConnect.Packets;
 using QuantConnect.Interfaces;
 using QuantConnect.Securities;
-using QuantConnect.Brokerages;
 using System.Collections.Generic;
 
-namespace QuantConnect.TemplateBrokerage
+namespace QuantConnect.Brokerages.Template
 {
     [BrokerageFactory(typeof(TemplateBrokerageFactory))]
     public class TemplateBrokerage : Brokerage, IDataQueueHandler, IDataQueueUniverseProvider

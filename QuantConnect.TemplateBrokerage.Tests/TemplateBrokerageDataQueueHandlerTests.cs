@@ -20,7 +20,7 @@ using QuantConnect.Tests;
 using QuantConnect.Logging;
 using QuantConnect.Data.Market;
 
-namespace QuantConnect.TemplateBrokerage.Tests
+namespace QuantConnect.Brokerages.Template.Tests
 {
     [TestFixture]
     public partial class TemplateBrokerageTests
