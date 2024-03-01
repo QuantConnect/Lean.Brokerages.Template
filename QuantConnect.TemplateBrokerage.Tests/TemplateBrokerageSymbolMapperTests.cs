@@ -15,7 +15,7 @@
 
 using NUnit.Framework;
 
-namespace QuantConnect.TemplateBrokerage.Tests
+namespace QuantConnect.Brokerages.TemplateBrokerage.Tests
 {
     [TestFixture, Ignore("Not implemented")]
     public class TemplateBrokerageSymbolMapperTests

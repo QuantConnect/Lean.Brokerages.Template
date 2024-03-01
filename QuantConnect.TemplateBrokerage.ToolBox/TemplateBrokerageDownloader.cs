@@ -17,7 +17,7 @@ using System;
 using QuantConnect.Data;
 using System.Collections.Generic;
 
-namespace QuantConnect.TemplateBrokerage.ToolBox
+namespace QuantConnect.Brokerages.TemplateBrokerage.ToolBox
 {
     /// <summary>
     /// Template Brokerage Data Downloader implementation

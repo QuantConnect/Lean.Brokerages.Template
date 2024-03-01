@@ -20,7 +20,7 @@ using QuantConnect.Interfaces;
 using QuantConnect.Securities;
 using System.Collections.Generic;
 
-namespace QuantConnect.TemplateBrokerage
+namespace QuantConnect.Brokerages.TemplateBrokerage
 {
     /// <summary>
     /// Provides a template implementation of BrokerageFactory
