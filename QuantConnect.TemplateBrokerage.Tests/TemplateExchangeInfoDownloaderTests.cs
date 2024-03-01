@@ -19,7 +19,7 @@ using QuantConnect.Util;
 using System;
 using System.Linq;
 
-namespace QuantConnect.Brokerages.TemplateBrokerage.Tests
+namespace QuantConnect.Brokerages.Template.Tests
 {
     [TestFixture, Ignore("This test requires a configured TemplateExchangeInfoDownloader")]
     public class TemplateExchangeInfoDownloaderTests

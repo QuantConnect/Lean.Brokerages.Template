@@ -22,7 +22,7 @@ using QuantConnect.Interfaces;
 using QuantConnect.Securities;
 using System.Collections.Generic;
 
-namespace QuantConnect.Brokerages.TemplateBrokerage
+namespace QuantConnect.Brokerages.Template
 {
     [BrokerageFactory(typeof(TemplateBrokerageFactory))]
     public class TemplateBrokerage : Brokerage, IDataQueueHandler, IDataQueueUniverseProvider

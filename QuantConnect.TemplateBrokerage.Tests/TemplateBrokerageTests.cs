@@ -19,7 +19,7 @@ using QuantConnect.Interfaces;
 using QuantConnect.Securities;
 using QuantConnect.Tests.Brokerages;
 
-namespace QuantConnect.Brokerages.TemplateBrokerage.Tests
+namespace QuantConnect.Brokerages.Template.Tests
 {
     [TestFixture, Ignore("Not implemented")]
     public partial class TemplateBrokerageTests : BrokerageTests
