@@ -49,6 +49,10 @@ namespace QuantConnect.Brokerages.Template.Tests
             SetCash(100000000);
             SetCash("USDT", 10000);
 
+            /// Create an instance of class BrokerageAlgorithmSettings using the brokerage settings url.
+            /// For example: https://raw.githubusercontent.com/QuantConnect/Lean.Brokerages.InteractiveBrokers/master/interactivebrokers.json
+            /// This object will contain the security types, order types, resolutions and data types
+            /// allowed by the brokerage
             BrokerageAlgorithmSettings = new BrokerageAlgorithmSettings(BrokerageSettingsURL);
             BrokerageAlgorithmSettings.BrokerageName = Brokerage;
             SetBrokerageModel(BrokerageAlgorithmSettings.BrokerageName);
@@ -71,9 +75,12 @@ namespace QuantConnect.Brokerages.Template.Tests
             };
         }
 
+        /// <summary>
+        /// This method will add one symbol for each of the securities allowed by this brokerage
+        /// </summary>
         protected virtual void AddSymbols()
         {
-            foreach(var symbol in BrokerageAlgorithmSettings.SecurityTypesToAdd)
+            foreach(var symbol in BrokerageAlgorithmSettings.SymbolsToAdd)
             {
                 if (symbol.Underlying?.SecurityType == SecurityType.Future)
                 {
@@ -123,46 +130,58 @@ namespace QuantConnect.Brokerages.Template.Tests
             }
         }
 
+        /// <summary>
+        /// Once the future, option, index option and future option contracts have been set,
+        /// this method will call `BrokerageAlgorithmSettings.InitializeSymbols()` method.
+        /// That method will define the securities allowed per order type according to the 
+        /// brokerage
+        /// </summary>
         protected virtual void SetupSymbols()
         {
             BrokerageAlgorithmSettings.InitializeSymbols();
             _orderTypes = _orderTypeMethods.Keys.ToList();
-            _pointsFoundPerSymbol = BrokerageAlgorithmSettings.SecurityTypes.ToDictionary(x => x, x => 0);
+            _pointsFoundPerSymbol = BrokerageAlgorithmSettings.Symbols.ToDictionary(x => x, x => 0);
             _symbolsHaveBeenSetup = true;
         }
 
         public override void OnData(Slice slice)
         {
+            /// If this brokerage allows futures, wait until getting one future contract
             if (!SetFutureContract(slice))
             {
                 Debug($"{Time}: Waiting for future contract to be set...");
                 return;
             }
 
+            /// If this brokerage allows options, wait until getting one option contract
             if (!SetOptionContract(BrokerageAlgorithmSettings.CanonicalOptionSymbol, slice.OptionChains.Values, SecurityType.Option, ref BrokerageAlgorithmSettings.OptionContract))
             {
                 Debug($"{Time}: Waiting for option contract to be set...");
                 return;
             }
 
+            /// If this brokerage allows index options, wait until getting one index option contract
             if (!SetOptionContract(BrokerageAlgorithmSettings.CanonicalIndexOptionSymbol, slice.OptionChains.Values, SecurityType.IndexOption, ref BrokerageAlgorithmSettings.IndexOptionContract))
             {
                 Debug($"{Time}: Waiting for index option contract to be set...");
                 return;
             }
 
+            /// If this brokerage allows future options, wait until getting one future option contract
             if (!SetOptionContract(BrokerageAlgorithmSettings.CanonicalFutureOptionSymbol, slice.OptionChains.Values, SecurityType.FutureOption, ref BrokerageAlgorithmSettings.FutureOptionContract))
             {
                 Debug($"{Time}: Waiting for future option contract to be set...");
                 return;
             }
 
+            /// Define the securities to test per order type
             if (!_symbolsHaveBeenSetup)
             {
                 SetupSymbols();
             }
 
-            foreach (var symbol in BrokerageAlgorithmSettings.SecurityTypes)
+            /// Check each symbol allowed by the brokerage has already a price
+            foreach (var symbol in BrokerageAlgorithmSettings.Symbols)
             {
                 if (!symbol.IsCanonical() && Securities[symbol].Price == 0)
                 {
@@ -171,14 +190,16 @@ namespace QuantConnect.Brokerages.Template.Tests
                 }
             }
 
+            /// Collect the data points we are getting for each symbol
             foreach(var symbol in slice.Keys)
             {
-                if (BrokerageAlgorithmSettings.SecurityTypes.Contains(symbol))
+                if (BrokerageAlgorithmSettings.Symbols.Contains(symbol))
                 {
                     _pointsFoundPerSymbol[symbol]++;
                 }
             }
 
+            /// In order to prevent running out of funds, liquidate the current holdings
             if (Portfolio.Invested)
             {
                 Debug($"{Time}: Liquidating so we start from scratch");
@@ -186,6 +207,7 @@ namespace QuantConnect.Brokerages.Template.Tests
                 return;
             }
 
+            /// In order to prevent running out of funds, cancel current open orders
             if (Transactions.GetOpenOrders().Count > 0)
             {
                 Debug($"{Time}: Cancelling open orders so we start from scratch");
@@ -193,16 +215,23 @@ namespace QuantConnect.Brokerages.Template.Tests
                 return;
             }
 
+            /// Select the order type to test and execute the test associated with it
             var testCase = _orderTypes[_testCaseIndex];
             var result = _orderTypeMethods[testCase](slice);
 
+            /// Check all the order tickets from the test result are valid, except the case
+            /// when the order type was not allowed in the brokerage
             if (result != null && result.Any(x => x.Status == OrderStatus.Invalid) && (BrokerageAlgorithmSettings.SymbolToTestPerOrderType.ContainsKey(testCase)))
             {
                 throw new RegressionTestException($"Brokerage was supposed to accept orders of type {testCase} but one order was invalid: " +
                     $"{string.Join(", ", result.Where(x => x.Status == OrderStatus.Invalid))}");
             }
 
+            /// Update the index to test the next order type on the next OnData() call
             _testCaseIndex++;
+
+            /// Once finished, assert we can get history data points for each security
+            /// at the allowed resolutions and with the defined data types by the brokerage
             if (_testCaseIndex == _orderTypes.Count)
             {
                 AssertHistory();
@@ -210,6 +239,10 @@ namespace QuantConnect.Brokerages.Template.Tests
             }
         }
 
+        /// <summary>
+        /// At the end of the algorithm, asserts we obtained at least one data point for each
+        /// of the tested securities
+        /// </summary>
         public override void OnEndOfAlgorithm()
         {
             foreach(var symbol in _pointsFoundPerSymbol.Where(x => x.Value == 0).Select(x => x.Key))
@@ -218,10 +251,14 @@ namespace QuantConnect.Brokerages.Template.Tests
             }
         }
 
+        /// <summary>
+        /// Asserts we can get history data points for each of the tested securities using the allowed
+        /// resolutions and data types by the brokerage
+        /// </summary>
         protected virtual void AssertHistory()
         {
             IEnumerable<IBaseData> history = default;
-            foreach (var symbol in BrokerageAlgorithmSettings.SecurityTypes)
+            foreach (var symbol in BrokerageAlgorithmSettings.Symbols)
             {
                 foreach(var resolution in BrokerageAlgorithmSettings.ResolutionsPerSecurity[symbol.SecurityType])
                 {
@@ -246,6 +283,10 @@ namespace QuantConnect.Brokerages.Template.Tests
             }
         }
 
+        /// <summary>
+        /// Gets a price for an order based on the symbol. This price can be above
+        /// the market or not depending on the parameter `aboveTheMartet`
+        /// </summary>
         protected virtual decimal GetOrderPrice(Symbol symbol, bool aboveTheMarket)
         {
             var assetPrice = Securities[symbol].Price;
@@ -269,6 +310,11 @@ namespace QuantConnect.Brokerages.Template.Tests
             return assetPrice;
         }
 
+        /// <summary>
+        /// This method will get one option contract for the added canonical option (If options 
+        /// are allowed by the brokerage). Once one option contract is found it will save it in
+        /// the contract symbol provided by reference
+        /// </summary>
         protected virtual bool SetOptionContract(Symbol canonical, ICollection<OptionChain> chains, SecurityType securityType, ref Symbol contract)
         {
             if (canonical == null)
@@ -298,6 +344,11 @@ namespace QuantConnect.Brokerages.Template.Tests
             return contract != null;
         }
 
+        /// <summary>
+        /// This method will get one future contract for the added canonical future (If options 
+        /// are allowed by the brokerage). Once one future contract is found it will save it in
+        /// the `BrokerageAlgorithmSettings.FutureContract` property
+        /// </summary>
         protected virtual bool SetFutureContract(Slice slice)
         {
             if (BrokerageAlgorithmSettings.CanonicalFutureSymbol == null)
@@ -323,11 +374,15 @@ namespace QuantConnect.Brokerages.Template.Tests
             return BrokerageAlgorithmSettings.FutureContract != null;
         }
 
+        /// <summary>
+        /// Executes one of the following orders: Market order, Limit order, Stop Market order,
+        /// Stop Limit order, LimitIfTouched order or TrailingStop order
+        /// </summary>
         protected virtual List<OrderTicket> ExecuteOrder(OrderType orderType)
         {
             if (!BrokerageAlgorithmSettings.SymbolToTestPerOrderType.TryGetValue(orderType, out var symbols))
             {
-                symbols = BrokerageAlgorithmSettings.SecurityTypes; ;
+                symbols = BrokerageAlgorithmSettings.Symbols;
             }
 
             Debug($"{Time}: Sending {orderType} orders");
@@ -365,6 +420,9 @@ namespace QuantConnect.Brokerages.Template.Tests
             return result;
         }
 
+        /// <summary>
+        /// Executes a Market On Open order for the allowed security types
+        /// </summary>
         protected virtual List<OrderTicket> ExecuteMarketOnOpenOrders()
         {
             var result = new List<OrderTicket>();
@@ -374,7 +432,7 @@ namespace QuantConnect.Brokerages.Template.Tests
                 
                 if (!BrokerageAlgorithmSettings.SymbolToTestPerOrderType.TryGetValue(OrderType.MarketOnOpen, out var symbols))
                 {
-                    symbols = BrokerageAlgorithmSettings.SecurityTypes; ;
+                    symbols = BrokerageAlgorithmSettings.Symbols;
                 }
                 foreach (var symbol in symbols)
                 {
@@ -391,6 +449,9 @@ namespace QuantConnect.Brokerages.Template.Tests
             return result;
         }
 
+        /// <summary>
+        /// Executes a Market On Close order for the allowed security types
+        /// </summary>
         protected virtual List<OrderTicket> ExecuteMarketOnCloseOrders()
         {
             var result = new List<OrderTicket>();
@@ -401,7 +462,7 @@ namespace QuantConnect.Brokerages.Template.Tests
                 Debug($"{Time}: Sending MarketOnClose orders");
                 if (!BrokerageAlgorithmSettings.SymbolToTestPerOrderType.TryGetValue(OrderType.MarketOnClose, out var symbols))
                 {
-                    symbols = BrokerageAlgorithmSettings.SecurityTypes; ;
+                    symbols = BrokerageAlgorithmSettings.Symbols;
                 }
 
                 foreach (var symbol in symbols)
@@ -416,6 +477,9 @@ namespace QuantConnect.Brokerages.Template.Tests
             return result;
         }
 
+        /// <summary>
+        /// Executes an order to exercise an option if one has been set
+        /// </summary>
         protected virtual List<OrderTicket> ExecuteOptionExerciseOrder()
         {
             if (BrokerageAlgorithmSettings.OptionContract == null)
@@ -432,6 +496,10 @@ namespace QuantConnect.Brokerages.Template.Tests
             return result;
         }
 
+        /// <summary>
+        /// Executes one of the following orders: Combo Market order, Combo Limit order or
+        /// Combo Leg Limit order
+        /// </summary>
         protected virtual List<OrderTicket> ExecuteComboOrder(Slice slice, OrderType orderType)
         {
             if (BrokerageAlgorithmSettings.OptionContract == null)
@@ -480,6 +548,9 @@ namespace QuantConnect.Brokerages.Template.Tests
             return null;
         }
 
+        /// <summary>
+        /// Gets the minimum order quantity allowed by the brokerage for the given symbol
+        /// </summary>
         protected virtual decimal GetOrderQuantity(Symbol symbol)
         {
             return Securities[symbol].SymbolProperties.MinimumOrderSize ?? 1;

@@ -31,42 +31,162 @@ namespace QuantConnect.Brokerages.Template.Tests
         public Symbol FutureContract;
         public Symbol FutureOptionContract;
         public Symbol IndexOptionContract;
-        public Dictionary<SecurityType, Symbol> SymbolsPerSecurityType;
+
+        /// <summary>
+        /// Name of the brokerage to use in the algorithm. If not specified it uses the default
+        /// </summary>
         public BrokerageName BrokerageName { get; set; } = BrokerageName.Default;
+
+        /// <summary>
+        /// Resolution to use in the algorithm
+        /// </summary>
         public Resolution Resolution => Resolution.Minute;
-        public int OpenOrdersTimeout => 5;
+
+        /// <summary>
+        /// Class containing symbols to use in the algorithm
+        /// </summary>
         public BaseMarketSymbols MarketSymbols { get; protected set; }
+
+        /// <summary>
+        /// Equity symbol to use in the algorithm
+        /// </summary>
         public Symbol EquitySymbol => MarketSymbols.EquitySymbol;
+
+        /// <summary>
+        /// Forex symbol to use in the algorithm
+        /// </summary>
         public Symbol ForexSymbol => MarketSymbols.ForexSymbol;
+
+        /// <summary>
+        /// Crypto symbol to use in the algorithm
+        /// </summary>
         public Symbol CryptoSymbol => MarketSymbols.CryptoSymbol;
+
+        /// <summary>
+        /// Cfd symbol to use in the algorithm
+        /// </summary>
         public Symbol CfdSymbol => MarketSymbols.CfdSymbol;
+
+        /// <summary>
+        /// Crypto future symbol to use in the algorithm
+        /// </summary>
         public Symbol CryptoFutureSymbol => MarketSymbols.CryptoFutureSymbol;
+
+        /// <summary>
+        /// Canonical option symbol to use in the algorithm
+        /// </summary>
         public Symbol CanonicalOptionSymbol => MarketSymbols.CanonicalOptionSymbol;
+
+        /// <summary>
+        /// Canonical index option symbol to use in the algorithm
+        /// </summary>
         public Symbol CanonicalIndexOptionSymbol => MarketSymbols.CanonicalIndexOptionSymbol;
+
+        /// <summary>
+        /// Canonical future symbol to use in the algorithm
+        /// </summary>
         public Symbol CanonicalFutureSymbol => MarketSymbols.CanonicalFutureSymbol;
+
+        /// <summary>
+        /// Canonical future option symbol to use in the algorithm
+        /// </summary>
         public Symbol CanonicalFutureOptionSymbol => MarketSymbols.CanonicalFutureOptionSymbol;
+
+        /// <summary>
+        /// Filter for the index option contracts
+        /// </summary>
         public Func<OptionFilterUniverse, OptionFilterUniverse> IndexOptionFilter => null;
+
+        /// <summary>
+        /// Filter for the future contracts
+        /// </summary>
         public Func<FutureFilterUniverse, FutureFilterUniverse> FutureFilter => u => u.Expiration(0, 182);
+
+        /// <summary>
+        /// Filter for the future option contracts
+        /// </summary>
         public Func<OptionFilterUniverse, OptionFilterUniverse> FutureOptionFilter => u => u.Strikes(-2, +2).Expiration(0, 60);
+
+        /// <summary>
+        /// Filter for the option contracts
+        /// </summary>
         public Func<OptionFilterUniverse, OptionFilterUniverse> OptionFilter => u => u.Strikes(-2, +2).Expiration(0, 60);
+
+        /// <summary>
+        /// Dictionary where the key is the order type to test in the algorithm and the value associated
+        /// with is the list of symbols for which the orders will be done. For example, if the key is
+        /// MarketOrder and the values are Equity, Forex and Crypto, the algorithm will make market orders
+        /// for those Equity, Forex and Crypto symbols.
+        /// </summary>
         public Dictionary<OrderType, List<Symbol>> SymbolToTestPerOrderType { get; protected set; }
+
+        /// <summary>
+        /// List of security types allowed by the brokerage
+        /// </summary>
         public List<SecurityType> Securities { get; protected set; }
+
+        /// <summary>
+        /// List of order types allowed by the brokerage
+        /// </summary>
         public List<OrderType> OrderTypes { get; protected set; }
+
+        /// <summary>
+        /// List of resolutions allowed by the brokerage
+        /// </summary>
         public List<Resolution> Resolutions { get; protected set; }
+
+        /// <summary>
+        /// List of data types allowed by the brokerage
+        /// </summary>
         public List<Type> DataTypes { get; protected set; }
+
+        /// <summary>
+        /// List of markets allowed by the brokerage
+        /// </summary>
         public List<string> Markets { get; protected set; }
-        public List<Symbol> SecurityTypes { get; protected set; }
-        public List<Symbol> SecurityTypesToAdd { get; protected set; }
+
+        /// <summary>
+        /// List of symbols to use in the algorithm
+        /// </summary>
+        public List<Symbol> Symbols { get; protected set; }
+
+        /// <summary>
+        /// List of symbols to add in the algorithm
+        /// </summary>
+        /// <remarks>The difference between this property and Symbols is that this list
+        /// contains the canonical symbols for options, futures, future options and index
+        /// options while Symbols contains the contracts</remarks>
+        public List<Symbol> SymbolsToAdd { get; protected set; }
+
+        /// <summary>
+        /// Dictionary where each key is a security type and the value associated with it is a list
+        /// of resolutions for which a history request will be made at the mentioned security type.
+        /// For example, if the key is Forex and the value is a list with Minute, Second and Hour
+        /// resolutions, a history request for that forex symbol will be made at the mentioned
+        /// resolutions
+        /// </summary>
         public Dictionary<SecurityType, List<Resolution>> ResolutionsPerSecurity { get ; protected set; }
+
+        /// <summary>
+        /// Dictionary where each key is a security type and the value associated with it is a list
+        /// of data types for which a history request will be made with the mentioned security type.
+        /// For example, if the key is Forex and the value is a list with TradeBar and Quotebar,
+        /// a history request for that Forex symbol will be made with the mentioned security
+        /// types
+        /// </summary>
         public Dictionary<SecurityType, List<Type>> DataTypesPerSecurity { get; protected set; }
 
         public BrokerageAlgorithmSettings(string brokerageSettingsURL)
         {
             _url = brokerageSettingsURL;
             LoadConfigs();
-            SymbolsToAdd();
+            SelectSymbolsToAdd();
         }
 
+        /// <summary>
+        /// Loads the allowed order types, security types, data types, resolutions and markets
+        /// from the provided url of the settings .json file
+        /// </summary>
         public async void LoadConfigs()
         {
             var json = _url.DownloadData();
@@ -91,9 +211,15 @@ namespace QuantConnect.Brokerages.Template.Tests
             ConfigSymbols();
         }
 
+        /// <summary>
+        /// Once we have a symbol for each security type, initializes the
+        /// list of symbols to use in the algorithm so that it can also
+        /// initialize the dictionaries of order types, resolutions and
+        /// security types to test in the algorithm
+        /// </summary>
         public void InitializeSymbols()
         {
-            SecurityTypes = SecurityTypesToAdd.Select(x =>
+            Symbols = SymbolsToAdd.Select(x =>
             {
                 switch (x.SecurityType)
                 {
@@ -110,11 +236,20 @@ namespace QuantConnect.Brokerages.Template.Tests
                 }
             }).ToList();
 
-            SymbolToTestPerOrderType = OrderTypes.ToDictionary(x => x, x => SecurityTypes);
+            /// Since the value for each key in the following dictionaries is always
+            /// the same, one could think we can just use a list of order types,
+            /// resolutions and data types. However, the purpose of these dictionaries
+            /// is that we can specify the security types that will be tested
+            // for each resolution, order type and data type.
+            // See InteractiveBrokersBrokerageRegressionAlgorithm
+            SymbolToTestPerOrderType = OrderTypes.ToDictionary(x => x, x => Symbols);
             ResolutionsPerSecurity = Securities.ToDictionary(x => x, x => Resolutions);
             DataTypesPerSecurity = Securities.ToDictionary(x => x, x => DataTypes);
         }
 
+        /// <summary>
+        /// Parses a string list of order types into an actual list of order types
+        /// </summary>
         private void ConvertOrderTypes(List<string> orderTypes)
         {
             var orderTypesDict = new Dictionary<string, dynamic>();
@@ -141,6 +276,9 @@ namespace QuantConnect.Brokerages.Template.Tests
             }
         }
 
+        /// <summary>
+        /// Parses a string list of data types into an actual list of data types
+        /// </summary>
         private void ConvertDataTypes(List<string> types)
         {
             DataTypes = new List<Type>();
@@ -157,6 +295,9 @@ namespace QuantConnect.Brokerages.Template.Tests
             }
         }
 
+        /// <summary>
+        /// Defines the symbols that will be used in the algorithm
+        /// </summary>
         private void ConfigSymbols()
         {
             MarketSymbols = new BaseMarketSymbols();
@@ -185,46 +326,51 @@ namespace QuantConnect.Brokerages.Template.Tests
             else if (Markets.Contains("Bitfinex"))
             {
                 MarketSymbols.CryptoSymbol = Symbol.Create("BTCUSD", SecurityType.Crypto, Market.Bitfinex);
-    }
+            }
             else if (Markets.Contains("Coinbase"))
             {
                 MarketSymbols.CryptoSymbol = Symbol.Create("BTCUSD", SecurityType.Crypto, Market.Coinbase);
             }
         }
 
-        private void SymbolsToAdd()
+        /// <summary>
+        /// From the list of security types to use in the algorithm, it
+        /// selects for each type a symbol of that type and adds it into
+        /// SymbolsToAdd list
+        /// </summary>
+        private void SelectSymbolsToAdd()
         {
-            SecurityTypesToAdd = new List<Symbol>();
+            SymbolsToAdd = new List<Symbol>();
             foreach(var securityType in Securities)
             {
                 switch (securityType)
                 {
                     case SecurityType.Equity:
-                        SecurityTypesToAdd.Add(EquitySymbol);
+                        SymbolsToAdd.Add(EquitySymbol);
                         break;
                     case SecurityType.Option:
-                        SecurityTypesToAdd.Add(CanonicalOptionSymbol);
+                        SymbolsToAdd.Add(CanonicalOptionSymbol);
                         break;
                     case SecurityType.Forex:
-                        SecurityTypesToAdd.Add(ForexSymbol);
+                        SymbolsToAdd.Add(ForexSymbol);
                         break;
                     case SecurityType.Future:
-                        SecurityTypesToAdd.Add(CanonicalFutureSymbol);
+                        SymbolsToAdd.Add(CanonicalFutureSymbol);
                         break;
                     case SecurityType.Cfd:
-                        SecurityTypesToAdd.Add(CfdSymbol);
+                        SymbolsToAdd.Add(CfdSymbol);
                         break;
                     case SecurityType.Crypto:
-                        SecurityTypesToAdd.Add(CryptoSymbol);
+                        SymbolsToAdd.Add(CryptoSymbol);
                         break;
                     case SecurityType.FutureOption:
-                        SecurityTypesToAdd.Add(CanonicalFutureOptionSymbol);
+                        SymbolsToAdd.Add(CanonicalFutureOptionSymbol);
                         break;
                     case SecurityType.IndexOption:
-                        SecurityTypesToAdd.Add(CanonicalIndexOptionSymbol);
+                        SymbolsToAdd.Add(CanonicalIndexOptionSymbol);
                         break;
                     case SecurityType.CryptoFuture:
-                        SecurityTypesToAdd.Add(CryptoFutureSymbol);
+                        SymbolsToAdd.Add(CryptoFutureSymbol);
                         break;
                 }
             }
