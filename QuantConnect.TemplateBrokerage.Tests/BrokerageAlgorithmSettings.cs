@@ -24,6 +24,10 @@ using System.Linq;
 
 namespace QuantConnect.Brokerages.Template.Tests
 {
+    /// <summary>
+    /// Class containing the security types, order types, data types and resolutions supported by
+    /// certain brokerage
+    /// </summary>
     public class BrokerageAlgorithmSettings
     {
         private string _url;
@@ -123,7 +127,7 @@ namespace QuantConnect.Brokerages.Template.Tests
         /// <summary>
         /// List of security types allowed by the brokerage
         /// </summary>
-        public List<SecurityType> Securities { get; protected set; }
+        public List<SecurityType> SecurityTypes { get; protected set; }
 
         /// <summary>
         /// List of order types allowed by the brokerage
@@ -151,14 +155,6 @@ namespace QuantConnect.Brokerages.Template.Tests
         public List<Symbol> Symbols { get; protected set; }
 
         /// <summary>
-        /// List of symbols to add in the algorithm
-        /// </summary>
-        /// <remarks>The difference between this property and Symbols is that this list
-        /// contains the canonical symbols for options, futures, future options and index
-        /// options while Symbols contains the contracts</remarks>
-        public List<Symbol> SymbolsToAdd { get; protected set; }
-
-        /// <summary>
         /// Dictionary where each key is a security type and the value associated with it is a list
         /// of resolutions for which a history request will be made at the mentioned security type.
         /// For example, if the key is Forex and the value is a list with Minute, Second and Hour
@@ -176,6 +172,10 @@ namespace QuantConnect.Brokerages.Template.Tests
         /// </summary>
         public Dictionary<SecurityType, List<Type>> DataTypesPerSecurity { get; protected set; }
 
+        /// <summary>
+        /// Initializes an instance of BrokerageAlgorithmSettingsURL class
+        /// </summary>
+        /// <param name="brokerageSettingsURL">URL of the brokerage settings json file</param>
         public BrokerageAlgorithmSettings(string brokerageSettingsURL)
         {
             _url = brokerageSettingsURL;
@@ -192,7 +192,7 @@ namespace QuantConnect.Brokerages.Template.Tests
             var json = _url.DownloadData();
             var jObject = JObject.Parse(json);
             var jsonSecurities = jObject["module-specification"]["download"]["security-types"].ToString();
-            Securities = JsonConvert.DeserializeObject<List<SecurityType>>(jsonSecurities);
+            SecurityTypes = JsonConvert.DeserializeObject<List<SecurityType>>(jsonSecurities);
 
             var jsonOrderTypes = jObject["order-types"].ToString();
             var orderTypes = JsonConvert.DeserializeObject<List<string>>(jsonOrderTypes);
@@ -219,7 +219,7 @@ namespace QuantConnect.Brokerages.Template.Tests
         /// </summary>
         public void InitializeSymbols()
         {
-            Symbols = SymbolsToAdd.Select(x =>
+            Symbols = Symbols.Select(x =>
             {
                 switch (x.SecurityType)
                 {
@@ -243,8 +243,8 @@ namespace QuantConnect.Brokerages.Template.Tests
             // for each resolution, order type and data type.
             // See InteractiveBrokersBrokerageRegressionAlgorithm
             SymbolToTestPerOrderType = OrderTypes.ToDictionary(x => x, x => Symbols);
-            ResolutionsPerSecurity = Securities.ToDictionary(x => x, x => Resolutions);
-            DataTypesPerSecurity = Securities.ToDictionary(x => x, x => DataTypes);
+            ResolutionsPerSecurity = SecurityTypes.ToDictionary(x => x, x => Resolutions);
+            DataTypesPerSecurity = SecurityTypes.ToDictionary(x => x, x => DataTypes);
         }
 
         /// <summary>
@@ -340,37 +340,37 @@ namespace QuantConnect.Brokerages.Template.Tests
         /// </summary>
         private void SelectSymbolsToAdd()
         {
-            SymbolsToAdd = new List<Symbol>();
-            foreach(var securityType in Securities)
+            Symbols = new List<Symbol>();
+            foreach(var securityType in SecurityTypes)
             {
                 switch (securityType)
                 {
                     case SecurityType.Equity:
-                        SymbolsToAdd.Add(EquitySymbol);
+                        Symbols.Add(EquitySymbol);
                         break;
                     case SecurityType.Option:
-                        SymbolsToAdd.Add(CanonicalOptionSymbol);
+                        Symbols.Add(CanonicalOptionSymbol);
                         break;
                     case SecurityType.Forex:
-                        SymbolsToAdd.Add(ForexSymbol);
+                        Symbols.Add(ForexSymbol);
                         break;
                     case SecurityType.Future:
-                        SymbolsToAdd.Add(CanonicalFutureSymbol);
+                        Symbols.Add(CanonicalFutureSymbol);
                         break;
                     case SecurityType.Cfd:
-                        SymbolsToAdd.Add(CfdSymbol);
+                        Symbols.Add(CfdSymbol);
                         break;
                     case SecurityType.Crypto:
-                        SymbolsToAdd.Add(CryptoSymbol);
+                        Symbols.Add(CryptoSymbol);
                         break;
                     case SecurityType.FutureOption:
-                        SymbolsToAdd.Add(CanonicalFutureOptionSymbol);
+                        Symbols.Add(CanonicalFutureOptionSymbol);
                         break;
                     case SecurityType.IndexOption:
-                        SymbolsToAdd.Add(CanonicalIndexOptionSymbol);
+                        Symbols.Add(CanonicalIndexOptionSymbol);
                         break;
                     case SecurityType.CryptoFuture:
-                        SymbolsToAdd.Add(CryptoFutureSymbol);
+                        Symbols.Add(CryptoFutureSymbol);
                         break;
                 }
             }
