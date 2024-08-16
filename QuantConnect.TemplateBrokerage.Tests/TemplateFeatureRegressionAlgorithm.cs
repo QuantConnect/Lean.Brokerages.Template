@@ -65,7 +65,7 @@ namespace QuantConnect.Brokerages.Template.Tests
     /// if the order type is StopMarket and the associated symbols associated with
     /// it in the dictionary are AAPL, EURGBP and BTCETH, the algorithm will submit
     /// a stop market order for each of those symbols. It's also worth saying, that
-    /// this method can be overrided in case certain order type does not accept
+    /// this method can be overriden in case certain order type does not accept
     /// all the security types allowed by the brokerage. Finally, this method will
     /// also initialize a dictionary that will count the number of data points
     /// received by each symbol.
