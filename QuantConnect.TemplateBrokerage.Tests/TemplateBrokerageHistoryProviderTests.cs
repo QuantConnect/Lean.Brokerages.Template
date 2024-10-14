@@ -66,7 +66,7 @@ namespace QuantConnect.Brokerages.Template.Tests
                 historyProvider.SetBrokerage(brokerage);
                 historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null,
                     null, null, null, null,
-                    false, null, null));
+                    false, null, null, null));
 
                 var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
                 var now = DateTime.UtcNow;
