@@ -175,3 +175,36 @@ See the [brokerage development guide](https://www.quantconnect.com/tutorials/ope
     1. Test Server Stability and Connection Resilience.
         - Perform long-running tests during off-hours, such as nights and weekends, to validate that the remote server closes properly and that our connection remains stable.
         - During this test, monitor the connection for unexpected disruptions or failures after the server shutdown.
+
+# Best Practices for Implementing a New Plugin in Lean
+- <span style="background-color: #610e0e;">DON'T PUSH ANY CREDENTIALS IN THE COMMIT HISTORY.</span>
+- Each warning message in `GetHistory()` need log at once - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.HistoryProvider.cs#L34)
+- Use `OnMessage(...)` to display info to user
+    - use different [BrokerageMessageType](https://github.com/QuantConnect/Lean/blob/b99da54d5ae7c8737a85140e6442bdc5b5993ce4/Common/Brokerages/BrokerageMessageType.cs#L21)
+    - example [BrokerageMessageType.Warning](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L429)
+    - example [BrokerageMessageType.Error](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L580) - stop algorithm in Lean.
+- Use `OnOrderEvent(...)` to send any info about order.
+    - use appropriate [OrderStatus](https://github.com/QuantConnect/Lean/blob/b99da54d5ae7c8737a85140e6442bdc5b5993ce4/Common/Orders/OrderTypes.cs#L138) in it.
+    - example [OnOrderEvent:OrderStatus.Submitted](https://github.com/QuantConnect/Lean.Brokerages.ByBit/blob/master/QuantConnect.BybitBrokerage/BybitBrokerage.Brokerage.cs#L146)
+    - example [OnOrderEvent:OrderStatus.UpdateSubmitted](https://github.com/QuantConnect/Lean.Brokerages.ByBit/blob/master/QuantConnect.BybitBrokerage/BybitBrokerage.Brokerage.cs#L181)
+    - example [OnOrderEvent:OrderStatus.Filled](https://github.com/QuantConnect/Lean.Brokerages.Coinbase/blob/cf6731c2661694ee79a0a7e69726fa55c8983ddb/QuantConnect.CoinbaseBrokerage/CoinbaseBrokerage.Messaging.cs#L213)
+- Not forget about [OrderFee](https://github.com/QuantConnect/Lean.Brokerages.InteractiveBrokers/blob/4a6022984d6d63a3abb9a0e119f7454e211a5621/QuantConnect.InteractiveBrokersBrokerage/InteractiveBrokersBrokerage.cs#L2435).
+- To implement a **RateGate** that enforces brokerage restrictions.
+- Use [class BrokerageConcurrentMessageHandler](https://github.com/QuantConnect/Lean/blob/b99da54d5ae7c8737a85140e6442bdc5b5993ce4/Brokerages/BrokerageConcurrentMessageHandler.cs#L26) to synchronize processes like `PlaceOrder()`/`UpdateOrder()`/`CancelOrder()` between brokerage and Lean.
+    - we have lock getting new update with using `Monitor` underhood, example [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L436).
+- Use `IOrderProvider` to interact with actual Lean Order state in brokerage.
+- Avoid using `string`; prefer using Enums to reduce the number of bugs, example [TradeStation Account Type](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationExtensions.cs#L252).
+- Some brokerage need implement [CrossZeroPositionOrder](https://github.com/QuantConnect/Lean/blob/b99da54d5ae7c8737a85140e6442bdc5b5993ce4/Brokerages/Brokerage.cs#L572), reuse this logic.
+- Inherit `class BaseWebsocketsBrokerage` instead `Brokerage` to reuse already implemented WebSocket interaction and overload specific method or use events.
+- Use `class BrokerageMultiWebSocketSubscriptionManager` to implement multiple WebSocket connect (if brokerage support)
+    - example [ByBit](https://github.com/QuantConnect/Lean.Brokerages.ByBit/blob/master/QuantConnect.BybitBrokerage/BybitBrokerage.cs#L261C47-L261C89);
+    - write custom example [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/Streaming/StreamingTaskManager.cs)
+- Use [ExchangeTimeZone](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationExtensions.cs#L312) to specific Symbol to convert from UTC, example [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerageMultiStreamSubscriptionManager.cs#L225).
+- use [DefaultOrderBook](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerageMultiStreamSubscriptionManager.cs#L46) to keep High price in dictionary and emit new bid/ask price and size.
+    - example [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerageMultiStreamSubscriptionManager.cs#L175)
+- use `lock(...){ }` block when you call `IDataAggregator.Update()`.
+- Example of Re-Subscribe on Order updates - [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L769)
+    - Use `CancellationToken`;
+    - Infinity loop;
+    - Small delay before requesting based on `CancellationToken` too.
+    - If we will close connection, `CancellationToken` will be canceled and disposed well.
