@@ -13,18 +13,21 @@ See the [brokerage development guide](https://www.quantconnect.com/tutorials/ope
 ## Initial Setup
 
 1. Review documentation for the new brokerage integration.
-2. Approve supported **security types** (e.g., Equity, Index, Option).
-3. Approve support order types: Market, Limit, Stop, StopLimit, TrailingStop, MarketOnClose, TrailingStopLimit, etc.
-4. Create a new development account.
+2. Approve supported **[Security types](https://github.com/QuantConnect/Lean/blob/master/Common/Global.cs#L244)** (e.g., Equity, Index, Option).
+3. Approve support **[Order types](https://github.com/QuantConnect/Lean/blob/master/Common/Orders/OrderTypes.cs#L21)**: Market, Limit, Stop, StopLimit, TrailingStop, MarketOnClose, TrailingStopLimit, etc.
+4. Create a new brokerage development account.
 5. Generate API keys.
 6. 🍴📦Fork QuantConnect brokerage repository.
 7. Rename all template to new brokerage names by a skeleton.
-8. Remove: not used parts (for instance: downloader lean has generic now, but some brokerages support downloading trading pairs process like some crypto exchanges)
+    - for instance:
+        - `TemplateBrokerage.cs` -> `BinanceBrokerage.cs`
+        - `public class TemplateBrokerage` -> `public class InteractiveBrokersBrokerage`
+8. Remove: not used parts (for instance: downloader lean has generic now, but some brokerages support downloading trading pairs process like some crypto exchanges) - [Lean download data provider source](https://github.com/QuantConnect/Lean/tree/master/DownloaderDataProvider), [Bybit Exchange Info Downloader](https://github.com/QuantConnect/Lean.Brokerages.ByBit/blob/master/QuantConnect.BybitBrokerage.ToolBox/BybitExchangeInfoDownloader.cs)
 9. Implement API connection (simple request) infrastructure (generic method that send GET/POST requests) 
-10. If brokerage support several steps of authentication like **OAuth 2**
-11. Implement URL method to generate **Authorization URL**
-12. 🧪 Unit test: to get **Authorization URL**
-13. Create a method to automatically generate a new refresh token using the Authorization URL. Allow passing either the authorization code manually or the full URL in the configuration. Use a breakpoint to retrieve the refresh token and update the config file, streamlining the development process.
+10. If brokerage support several steps of authentication like **OAuth 2** - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/Api/TokenRefreshHandler.cs)
+11. Implement URL method to generate **Authorization URL** - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/Api/TradeStationApiClient.cs#L614)
+12. 🧪 Unit test: to get **Authorization URL** - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage.Tests/TradeStationBrokerageAdditionalTests.cs#L156)
+13. Create a method to automatically generate a new refresh token using the Authorization URL. Allow passing either the authorization code manually or the full URL in the configuration. Use a breakpoint to retrieve the refresh token and update the config file, streamlining the development process. - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/Api/TokenRefreshHandler.cs)
 14. Create brokerage config file in test project:
     
     ```json
@@ -45,54 +48,61 @@ See the [brokerage development guide](https://www.quantconnect.com/tutorials/ope
 
 > I recommend starting with the `GetHistory()` method, as it provides a clear understanding of the logic behind the `SymbolMapper` as well.
 > 
-17. Implement `CanSubscribe()`
-18. Implement `GetHistory()` 
-    1. For each support **Security Type**.
-    2. For each **Resolution** (which brokerage supports)
+17. Implement `CanSubscribe()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L735)
+    - Symbol must not be universe or canonical.;
+    - Brokerage must support the symbol's security type.
+18. Implement `GetHistory()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.HistoryProvider.cs#L51)
+    1. For each support **Security Type**;
+    2. For each **Resolution** (which brokerage supports);
         1. Tick, Second, Minute, Hour, Daily
-    3. For each **TickType**
+    3. For each **TickType**;
         1. Trade, Quote, OpenInterest
     4. Remarks:
         1. If the brokerage does not support a specific input parameter, it should log a warning immediately and return **`null`** from the **`GetHistory()`** method.
-19. 🧪 Unit test: `GetHistory()` 
-    1. Create valid test cases for each combination of **`Resolution`**, **`TickType`**, **`SecurityType`**, and other relevant parameters.
+        2. Use different [Consolidators](https://github.com/QuantConnect/Lean/tree/master/Common/Data/Consolidators) to aggregate bar resolution.
+19. 🧪 Unit test: `GetHistory()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage.Tests/TradeStationBrokerageHistoryProviderTests.cs)
+    1. Create valid test cases for each combination of **`Resolution`**, **`TickType`**, **`SecurityType`**, and other relevant parameters;
     2. Create invalid test cases to ensure the method returns **`null`** and no internal exceptions are thrown.
-20. Implement `GetBrokerageSymbol()`  in `class SymbolMapper` .
-21. 🧪 Unit test: `ReturnsCorrectBrokerageSymbol()`
-    1. we pass Lean Symbol and get string of brokerage symbol
-22. Implement `GetCashBalance()`
+20. Implement `GetBrokerageSymbol()`  in `class SymbolMapper` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationSymbolMapper.cs#L47)
+21. 🧪 Unit test: `ReturnsCorrectBrokerageSymbol()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage.Tests/TradeStationBrokerageSymbolMapperTests.cs)
+    1. We pass Lean Symbol and get string of brokerage symbol
+22. Implement `GetCashBalance()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L401)
 23. 🧪 Unit test: `GetCashBalance()`
-    1. we have generic method in `class BrokerageTests` 
-24. Implement `GetAccountHoldings()`
+    1. We have generic method in `class BrokerageTests` 
+24. Implement `GetAccountHoldings()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L349)
 25. 🧪 Unit test: `GetAccountHoldings()` 
     1. Note: skip doesn't support Security Types.
-26. Implement `GetOpenOrders()` 
-    1. All support OrderType
-    2. Convert brokerage order duration to Lean TimeInForce for each order.
-    3. Note: skip doesn't support Security Types.
+26. Implement `GetOpenOrders()` - [Binance example](https://github.com/QuantConnect/Lean.Brokerages.Binance/blob/master/QuantConnect.BinanceBrokerage/BinanceBrokerage.cs#L214)
+    1. All support OrderType;
+    2. Convert brokerage order duration to Lean TimeInForce for each order;
+    3. Note: skip doesn't support Security Types;
     4. Note: can create simple order with using brokerage Web UI or desktop app.
-27. Implement `GetLeanSymbol()` (Brokerage Ticker → Lean Symbol)
-28. 🧪 Unit test: `GetLeanSymbol()`
-29. Implement `PlaceOrder()`
+27. Implement `GetLeanSymbol()` (Brokerage Ticker → Lean Symbol) - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationSymbolMapper.cs#L96)
+    1. Reuse existing conversion methods from the [Lean source](https://github.com/QuantConnect/Lean/blob/master/Common/SymbolRepresentation.cs)
+28. 🧪 Unit test: `GetLeanSymbol()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage.Tests/TradeStationBrokerageSymbolMapperTests.cs)
+    1. `ReturnsCorrectLeanSymbol()`
+29. Implement `PlaceOrder()` - [Binance example](https://github.com/QuantConnect/Lean.Brokerages.Binance/blob/master/QuantConnect.BinanceBrokerage/BinanceBrokerage.cs#L266), [TradeStation example with CrossZeroOrder](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L419)
     1. Convert the Lean order type to the corresponding brokerage order type using specific parameters, then pass the request to the brokerage API.
     2. **Add new BrokerageId to Lean.Order.BrokerId**.
-    3. Send the event that the order was submitted successfully.
-30. 🧪 Unit test: `PlaceOrder()`
+    3. Send the `new OrderEvent(...)` that the order was submitted successfully.
+30. 🧪 Unit test: `PlaceOrder()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage.Tests/TradeStationBrokerageTests.cs#L126)
     1. different Security Types
     2. different MarketType (Market, Limit, Stop)
-31. Implement `CancelOrder()`
+31. Implement `CancelOrder()` - [Bybit example](https://github.com/QuantConnect/Lean.Brokerages.ByBit/blob/master/QuantConnect.BybitBrokerage/BybitBrokerage.Brokerage.cs#L1959)
     1. Validate that order has not cancelled or filled already to prevent from extra steps.
 32. Set up a continuous WebSocket connection.
-33. Implement `Connect()`
-    1. `public override bool IsConnected`
-34. Implement `Disconnect()`
-35. Implement User/Order update event.
+33. Implement `Connect()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L682)
+    1. `public override bool IsConnected` - Returns true if the WebSocket is connected and the subscription to user/order updates is active.
+34. Implement `Disconnect()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L700)
+    1. Stop all WS subscription.
+    2. Close connection. 
+35. Implement User/Order update event. - [Coinbase example](https://github.com/QuantConnect/Lean.Brokerages.Coinbase/blob/master/QuantConnect.CoinbaseBrokerage/CoinbaseBrokerage.Messaging.cs#L178)
     1. `PlaceOrder()` and receive updates about it via WebSocket, sending the relevant **`OrderEvent`** to **Lean** in real-time.
     2. Note: We should synchronize the process to avoid race conditions. First, complete the **`PlaceOrder`** operation, then return the corresponding event. This means we need to pause new updates from the WebSocket until the order is fully processed.
 36. 🧪 Unit test: `PlaceOrder()` → WS Update about filled.
 37. Implement ReSubscribe to user update.
     1. When the internet connection is lost, we should initiate a new WebSocket connection.
-38. Implement `UpdateOrder()`
+38. Implement `UpdateOrder()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L609)
 39. 🧪 Unit test: `UpdateOrder()`
     1. different Security Types.
     2. different quantities.
@@ -102,44 +112,66 @@ See the [brokerage development guide](https://www.quantconnect.com/tutorials/ope
 40. Implement the Subscription/Unsubscription process. (`interface IDataQueueHandler` )
     1. subscribe on level one update (quotes, trades, openInterest)
     2. Remarks:
-        1. use `IDataAggregator`
-        2. use different `ExchangeTimeZone` to different symbols.
-41. 🧪 Unit test: `DataQueueHandler` 
-    1. different Security Types
-    2. different `SubscriptionDataConfig` (Resolution, TickType)
-42. Implement `ReSubscriptionProcess` 
+        1. Use `IDataAggregator`;
+        2. Use different `ExchangeTimeZone` to different symbols - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerageMultiStreamSubscriptionManager.cs#L273);
+        3. `IDataAggregator.Update()` - different tick data.
+        4. use `DataQueueHandlerSubscriptionManager SubscriptionManager` from `abstract class BaseWebsocketsBrokerage` for Subscription/UnSubscription and count symbol, etc.
+        5. Use `class BrokerageMultiWebSocketSubscriptionManager` to multiple connection.
+41. 🧪 Unit test: `DataQueueHandler` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage.Tests/TradeStationBrokerageDataQueueHandlerTests.cs#L55)
+    1. Different Security Types;
+    2. Different `SubscriptionDataConfig` (Resolution, TickType).
+42. Implement `ReSubscriptionProcess` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/Streaming/StreamingTaskManager.cs#L160)
     1. When the internet connection is lost, we should establish a new stable connection and resubscribe to all the symbols that were previously subscribed to.
-43. Manually test `ReSubscriptionProcess` (switch on/off your internet connection)
-44. Implement `IDataQueueUniverseProvider`
+43. Implement `IDataQueueUniverseProvider` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.DataQueueUniverseProvider.cs)
     1. option chain provider
-45. 🧪 Unit test: `IDataQueueUniverseProvider`
+44. 🧪 Unit test: `IDataQueueUniverseProvider`
     1. different symbol of the same security type (Option, IndexOption)
-46. Implement `Initialize()` to initialize brokerage only through one method.
-47. **NOT FORGET**: `ValidateSubscription()`
+45. Implement `Initialize()` to initialize brokerage only through one method. - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L244)
+46. **NOT FORGET**: `ValidateSubscription()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L1255)
     1. place in `Initialize()`
-48. Implement `SetJob()`
-49. Implement `class BrokerageFactory` 
-50. 🧪 Unit test: `BrokerageFactory`
-51. Refactor: `brokerage.json` file in root of `.sln` 
-52. Implement `gh-actions.yml` to great CI/CD.
+    2. The same in all brokerages.
+47. Implement `SetJob()` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.DataQueueHandler.cs#L43)
+    1. A brokerage can be started `IDataQueueHandler` and not as a brokerage.
+48. Implement `class BrokerageFactory` - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerageFactory.cs)
+    1. `Dictionary<string, string> BrokerageData` - all brokerage configs.
+    2.  `GetBrokerageModel(...)` - use it like reference to model in Lean.
+49. 🧪 Unit test: `BrokerageFactory`
+50. Refactor: `brokerage.json` file in root of `.sln` 
+51. Implement `gh-actions.yml` to great CI/CD.
 
-## Lean integration
-
-53. Fork [Lean](https://github.com/quantConnect/lean)
-54. Implement `class BrokerageModel`
+## Lean integration - [TradeStation Lean PR](https://github.com/QuantConnect/Lean/pull/8031)
+> Use any Lean project as a reference within the brokerage integration to enhance debugging and streamline development.
+52. Fork [Lean](https://github.com/quantConnect/lean)
+53. Implement `class BrokerageModel`
     1. Support securities.
     2. Place and update orders.
-55. 🧪 Unit test: `BrokerageModel`
-56. Added brokerage name in `BrokerageName.cs`
-57. Added brokerage in `IBrokerageModel.cs` 
-58. Implement class `class BrokreageOrderProperties.cs` 
+54. 🧪 Unit test: `BrokerageModel`
+55. Added brokerage name in `BrokerageName.cs`
+56. Added brokerage in `IBrokerageModel.cs` 
+57. Implement class `class BrokreageOrderProperties.cs` 
     1. different additional property for brokerage (e.g. support extend hours when place order)
-59. Implement `class BrokerageFeeModel` 
-60. Added config in `Launcher/config.json` 
+58. Implement `class BrokerageFeeModel` 
+59. Added config in `Launcher/config.json` 
 
-## Lean-CLI integration
+## Lean-CLI integration - [CharlesSchwab Lean-CLI PR](https://github.com/QuantConnect/lean-cli/pull/517)
 
-61. Fork [lean-cli](https://github.com/QuantConnect/lean-cli)
-62. Upgrade `modules.json`
-63. Update lean-cli Readmi file 
+60. Fork [lean-cli](https://github.com/QuantConnect/lean-cli)
+61. Upgrade `modules.json`
+62. Update lean-cli Readmi file 
     1. `python scripts/readme.py`
+
+## Manual integration test
+63. Re-Subscription Process (after internet disconnect)
+    1. Re-subscribe to User/Order WebSocket Events;
+    2. Re-subscribe to Market Data;
+        1. Order Book;
+        2. Trade Information;
+        3. Level 1 Data.
+64. Multiple Subscriptions on Symbols
+    1. Subscribe to Option Chains;
+    2. Subscribe to Symbols with 500+;
+    3. Subscribe to Symbols with 1.000+.
+65. Long-Running Test for Night and Weekend.
+    1. Test Server Stability and Connection Resilience.
+        - Perform long-running tests during off-hours, such as nights and weekends, to validate that the remote server closes properly and that our connection remains stable.
+        - During this test, monitor the connection for unexpected disruptions or failures after the server shutdown.
