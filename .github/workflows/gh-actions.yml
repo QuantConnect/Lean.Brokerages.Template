@@ -6,20 +6,18 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
-    env:
-        QC_TEMPLATE_BROKERAGE_KEY: ${{ secrets.QC_TEMPLATE_BROKERAGE_KEY }}
-        QC_TEMPLATE_BROKERAGE_SECRET: ${{ secrets.QC_TEMPLATE_BROKERAGE_SECRET }}
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Free space
-        run: df -h && sudo rm -rf /usr/local/lib/android && sudo rm -rf /opt/ghc && rm -rf /opt/hostedtoolcache* && df -h
 
-      - uses: addnab/docker-run-action@v3
+      - name: Liberate disk space
+        uses: jlumbroso/free-disk-space@main
         with:
-          image: quantconnect/lean:foundation
-          options: --workdir /__w/Lean.Brokerages.Template/Lean.Brokerages.Template -v /home/runner/work:/__w -e QC_TEMPLATE_BROKERAGE_KEY=${{ secrets.QC_TEMPLATE_BROKERAGE_KEY }} -e QC_TEMPLATE_BROKERAGE_SECRET=${{ secrets.QC_TEMPLATE_BROKERAGE_SECRET }} -e QC_JOB_USER_ID=${{ secrets.QC_JOB_USER_ID }} -e QC_API_ACCESS_TOKEN=${{ secrets.QC_API_ACCESS_TOKEN }} -e QC_JOB_ORGANIZATION_ID=${{ secrets.QC_JOB_ORGANIZATION_ID }}
+          tool-cache: true
+          large-packages: false
+          docker-images: false
+          swap-storage: false
 
       - name: Checkout Lean Same Branch
         id: lean-same-branch
@@ -40,8 +38,13 @@ jobs:
       - name: Move Lean
         run: mv Lean ../Lean
 
-      - name: Build
-        run: dotnet build /p:Configuration=Release /v:quiet /p:WarningLevel=1 QuantConnect.TemplateBrokerage.sln
-
-      - name: Run Tests
-        run: dotnet test ./QuantConnect.TemplateBrokerage.Tests/bin/Release/QuantConnect.Brokerages.Template.Tests.dll
+      - uses: addnab/docker-run-action@v3
+        with:
+          image: quantconnect/lean:foundation
+          options: --workdir /__w/Lean.Brokerages.Template/Lean.Brokerages.Template -v /home/runner/work:/__w -e QC_TEMPLATE_BROKERAGE_KEY=${{ secrets.QC_TEMPLATE_BROKERAGE_KEY }} -e QC_TEMPLATE_BROKERAGE_SECRET=${{ secrets.QC_TEMPLATE_BROKERAGE_SECRET }} -e QC_JOB_USER_ID=${{ secrets.QC_JOB_USER_ID }} -e QC_API_ACCESS_TOKEN=${{ secrets.QC_API_ACCESS_TOKEN }} -e QC_JOB_ORGANIZATION_ID=${{ secrets.QC_JOB_ORGANIZATION_ID }}
+          shell: bash
+          run: |
+            # Build
+            dotnet build /p:Configuration=Release /v:quiet /p:WarningLevel=1 QuantConnect.TemplateBrokerage.sln && \
+            # Run Tests
+            dotnet test ./QuantConnect.TemplateBrokerage.Tests/bin/Release/QuantConnect.Brokerages.Template.Tests.dll
