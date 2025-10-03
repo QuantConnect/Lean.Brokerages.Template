@@ -188,9 +188,12 @@ namespace QuantConnect.Brokerages.Template.Tests
                 { OrderType.MarketOnClose, new Func<Slice, List<OrderTicket>>(slice => ExecuteMarketOnCloseOrders()) },
                 { OrderType.OptionExercise, new Func<Slice, List<OrderTicket>>(slice => ExecuteOptionExerciseOrder()) },
                 { OrderType.LimitIfTouched, new Func<Slice, List<OrderTicket>>(slice => ExecuteOrder(OrderType.LimitIfTouched)) },
-                { OrderType.ComboMarket, new Func<Slice, List<OrderTicket>>(slice => ExecuteComboOrder(slice, OrderType.ComboMarket)) },
-                { OrderType.ComboLimit, new Func<Slice, List<OrderTicket>>(slice => ExecuteComboOrder(slice, OrderType.ComboLimit)) },
-                { OrderType.ComboLegLimit, new Func<Slice, List<OrderTicket>>(slice => ExecuteComboOrder(slice, OrderType.ComboLegLimit)) },
+                { OrderType.ComboMarket, new Func<Slice, List<OrderTicket>>(slice => ExecuteComboOrder(slice, OrderType.ComboMarket, OrderDirection.Buy)) },
+                { OrderType.ComboMarket, new Func<Slice, List<OrderTicket>>(slice => ExecuteComboOrder(slice, OrderType.ComboMarket, OrderDirection.Sell)) },
+                { OrderType.ComboLimit, new Func<Slice, List<OrderTicket>>(slice => ExecuteComboOrder(slice, OrderType.ComboLimit, OrderDirection.Buy)) },
+                { OrderType.ComboLimit, new Func<Slice, List<OrderTicket>>(slice => ExecuteComboOrder(slice, OrderType.ComboLimit, OrderDirection.Sell)) },
+                { OrderType.ComboLegLimit, new Func<Slice, List<OrderTicket>>(slice => ExecuteComboOrder(slice, OrderType.ComboLegLimit, OrderDirection.Buy)) },
+                { OrderType.ComboLegLimit, new Func<Slice, List<OrderTicket>>(slice => ExecuteComboOrder(slice, OrderType.ComboLegLimit, OrderDirection.Sell)) },
                 { OrderType.TrailingStop, new Func<Slice, List<OrderTicket>>(slice => ExecuteOrder(OrderType.TrailingStop)) },
             };
         }
@@ -567,15 +570,14 @@ namespace QuantConnect.Brokerages.Template.Tests
         /// Executes one of the following orders: Combo Market order, Combo Limit order or
         /// Combo Leg Limit order
         /// </summary>
-        protected virtual List<OrderTicket> ExecuteComboOrder(Slice slice, OrderType orderType)
+        protected virtual List<OrderTicket> ExecuteComboOrder(Slice slice, OrderType orderType, OrderDirection orderDirection)
         {
             if (BrokerageAlgorithmSettings.OptionContract == null)
             {
                 return null;
             }
 
-            OptionChain chain;
-            if (IsMarketOpen(BrokerageAlgorithmSettings.OptionContract) && slice.OptionChains.TryGetValue(BrokerageAlgorithmSettings.CanonicalOptionSymbol, out chain))
+            if (IsMarketOpen(BrokerageAlgorithmSettings.OptionContract) && slice.OptionChains.TryGetValue(BrokerageAlgorithmSettings.CanonicalOptionSymbol, out var chain))
             {
                 var callContracts = chain.Where(contract => contract.Right == OptionRight.Call)
                     .GroupBy(x => x.Expiry)
@@ -591,24 +593,28 @@ namespace QuantConnect.Brokerages.Template.Tests
                 }
 
                 Debug($"{Time}: Sending combo market orders");
-                var orderLegs = new List<Leg>()
-                    {
-                        Leg.Create(callContracts[0].Symbol, (int)GetOrderQuantity(callContracts[0].Symbol)),
-                        Leg.Create(callContracts[1].Symbol, -(int)GetOrderQuantity(callContracts[1].Symbol)),
-                    };
+                var orderLegs = new List<Leg>(2)
+                {
+                    Leg.Create(callContracts[0].Symbol, (int)GetOrderQuantity(callContracts[0].Symbol)),
+                    Leg.Create(callContracts[1].Symbol, -(int)GetOrderQuantity(callContracts[1].Symbol)),
+                };
+
+                var groupOrderQuantity = orderDirection switch
+                {
+                    OrderDirection.Buy => 2, // Long (Bull) position
+                    OrderDirection.Sell => -2, // Short (Bear) position
+                    _ => throw new NotSupportedException($"The direction = {orderDirection} doesn't support")
+                };
+
                 switch (orderType)
                 {
                     case OrderType.ComboMarket:
-                        return ComboMarketOrder(orderLegs, 2);
+                        return ComboMarketOrder(orderLegs, groupOrderQuantity);
                     case OrderType.ComboLimit:
-                        return ComboLimitOrder(orderLegs, 2, GetOrderPrice(callContracts[0].Symbol, false));
+                        return ComboLimitOrder(orderLegs, groupOrderQuantity, GetOrderPrice(callContracts[0].Symbol, false));
                     case OrderType.ComboLegLimit:
-                        orderLegs = new List<Leg>()
-                        {
-                            Leg.Create(callContracts[0].Symbol, (int)GetOrderQuantity(callContracts[0].Symbol), GetOrderPrice(callContracts[0].Symbol, aboveTheMarket: false)),
-                            Leg.Create(callContracts[1].Symbol, -(int)GetOrderQuantity(callContracts[1].Symbol), GetOrderPrice(callContracts[1].Symbol, aboveTheMarket: false)),
-                        };
-                        return ComboLegLimitOrder(orderLegs, 2);
+                        orderLegs.ForEach(l => { l.OrderPrice = GetOrderPrice(l.Symbol, aboveTheMarket: false); });
+                        return ComboLegLimitOrder(orderLegs, groupOrderQuantity);
                 }
             }
 
