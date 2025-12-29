@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Product>QuantConnect.Brokerages.Template</Product>
     <AssemblyName>QuantConnect.Brokerages.Template</AssemblyName>
     <RootNamespace>QuantConnect.Brokerages.Template</RootNamespace>
