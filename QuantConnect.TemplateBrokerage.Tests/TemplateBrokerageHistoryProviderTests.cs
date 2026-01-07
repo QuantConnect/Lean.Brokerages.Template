@@ -66,7 +66,7 @@ namespace QuantConnect.Brokerages.Template.Tests
                 historyProvider.SetBrokerage(brokerage);
                 historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null,
                     null, null, null, null,
-                    false, null, null, null));
+                    false, null, null, new AlgorithmSettings()));
 
                 var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
                 var now = DateTime.UtcNow;
@@ -121,7 +121,7 @@ namespace QuantConnect.Brokerages.Template.Tests
 
             if (throwsException)
             {
-                Assert.Throws<ArgumentException>(test);
+                Assert.Throws<ArgumentNullException>(test);
             }
             else
             {
