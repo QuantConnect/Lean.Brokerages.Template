@@ -11,7 +11,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
-*/
+ */
 
 using System;
 using System.Linq;
@@ -32,26 +32,37 @@ namespace QuantConnect.Brokerages.Template.Tests
         {
             get
             {
-                return new[]
-                {
-                    // valid parameters, example:
-                    new TestCaseData(Symbols.BTCUSD, Resolution.Tick, TimeSpan.FromMinutes(1), TickType.Quote, typeof(Tick), false),
-                    new TestCaseData(Symbols.BTCUSD, Resolution.Minute, TimeSpan.FromMinutes(10), TickType.Quote, typeof(QuoteBar), false),
-                    new TestCaseData(Symbols.BTCUSD, Resolution.Daily, TimeSpan.FromDays(10), TickType.Quote, typeof(QuoteBar), false),
+                TestGlobals.Initialize();
 
-                    new TestCaseData(Symbols.BTCUSD, Resolution.Tick, TimeSpan.FromMinutes(1), TickType.Trade, typeof(Tick), false),
-                    new TestCaseData(Symbols.BTCUSD, Resolution.Minute, TimeSpan.FromMinutes(10), TickType.Trade, typeof(TradeBar), false),
-                    new TestCaseData(Symbols.BTCUSD, Resolution.Daily, TimeSpan.FromDays(10), TickType.Trade, typeof(TradeBar), false),
+                return
+                [
+                    // valid parameters, example:
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Tick, TimeSpan.FromMinutes(1), TickType.Quote,
+                        typeof(Tick), false),
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Minute, TimeSpan.FromMinutes(10), TickType.Quote,
+                        typeof(QuoteBar), false),
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Daily, TimeSpan.FromDays(10), TickType.Quote,
+                        typeof(QuoteBar), false),
+
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Tick, TimeSpan.FromMinutes(1), TickType.Trade,
+                        typeof(Tick), false),
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Minute, TimeSpan.FromMinutes(10), TickType.Trade,
+                        typeof(TradeBar), false),
+                    new TestCaseData(Symbols.BTCUSD, Resolution.Daily, TimeSpan.FromDays(10), TickType.Trade,
+                        typeof(TradeBar), false),
 
                     // invalid parameter, validate SecurityType more accurate
-                    new TestCaseData(Symbols.SPY, Resolution.Hour, TimeSpan.FromHours(14), TickType.Quote, typeof(QuoteBar), true),
+                    new TestCaseData(Symbols.SPY, Resolution.Hour, TimeSpan.FromHours(14), TickType.Quote,
+                        typeof(QuoteBar), true),
 
                     /// New Listed Symbol on Brokerage <see cref="Slice.SymbolChangedEvents"/>
-                    new TestCaseData(Symbol.Create("SUSHIGBP", SecurityType.Crypto, Market.Coinbase), Resolution.Minute, TimeSpan.FromHours(2), TickType.Trade, typeof(TradeBar), false),
+                    new TestCaseData(Symbol.Create("SUSHIGBP", SecurityType.Crypto, Market.Coinbase), Resolution.Minute,
+                        TimeSpan.FromHours(2), TickType.Trade, typeof(TradeBar), false),
 
                     /// Symbol was delisted form Brokerage (can return history data or not) <see cref="Slice.Delistings"/>
-                    new TestCaseData(Symbol.Create("SNTUSD", SecurityType.Crypto, Market.Coinbase), Resolution.Daily, TimeSpan.FromDays(14), TickType.Trade, typeof(TradeBar), true),
-                };
+                    new TestCaseData(Symbol.Create("SNTUSD", SecurityType.Crypto, Market.Coinbase), Resolution.Daily,
+                        TimeSpan.FromDays(14), TickType.Trade, typeof(TradeBar), true),
+                ];
             }
         }
 
