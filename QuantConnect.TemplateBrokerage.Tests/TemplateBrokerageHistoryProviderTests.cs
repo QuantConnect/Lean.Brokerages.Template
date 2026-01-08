@@ -58,77 +58,72 @@ namespace QuantConnect.Brokerages.Template.Tests
         }
 
         [Test, TestCaseSource(nameof(TestParameters))]
-        public void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, Type dataType, bool throwsException)
+        public void GetsHistory(Symbol symbol, Resolution resolution, TimeSpan period, TickType tickType, Type dataType, bool invalidRequest)
         {
-            TestDelegate test = () =>
+            var brokerage = new TemplateBrokerage(null);
+
+            var historyProvider = new BrokerageHistoryProvider();
+            historyProvider.SetBrokerage(brokerage);
+            historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null,
+                null, null, null, null,
+                false, null, null, new AlgorithmSettings()));
+
+            var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
+            var now = DateTime.UtcNow;
+            var requests = new[]
             {
-                var brokerage = new TemplateBrokerage(null);
-
-                var historyProvider = new BrokerageHistoryProvider();
-                historyProvider.SetBrokerage(brokerage);
-                historyProvider.Initialize(new HistoryProviderInitializeParameters(null, null, null,
-                    null, null, null, null,
-                    false, null, null, new AlgorithmSettings()));
-
-                var marketHoursDatabase = MarketHoursDatabase.FromDataFolder();
-                var now = DateTime.UtcNow;
-                var requests = new[]
-                {
-                    new HistoryRequest(now.Add(-period),
-                        now,
-                        dataType,
-                        symbol,
-                        resolution,
-                        marketHoursDatabase.GetExchangeHours(symbol.ID.Market, symbol, symbol.SecurityType),
-                        marketHoursDatabase.GetDataTimeZone(symbol.ID.Market, symbol, symbol.SecurityType),
-                        resolution,
-                        false,
-                        false,
-                        DataNormalizationMode.Adjusted,
-                        tickType)
-                };
-
-                var historyArray = historyProvider.GetHistory(requests, TimeZones.Utc).ToArray();
-                foreach (var slice in historyArray)
-                {
-                    if (resolution == Resolution.Tick)
-                    {
-                        foreach (var tick in slice.Ticks[symbol])
-                        {
-                            Log.Debug($"{tick}");
-                        }
-                    }
-                    else if (slice.QuoteBars.TryGetValue(symbol, out var quoteBar))
-                    {
-                        Log.Debug($"{quoteBar}");
-                    }
-                    else if (slice.Bars.TryGetValue(symbol, out var tradeBar))
-                    {
-                        Log.Debug($"{tradeBar}");
-                    }
-                }
-
-                if (historyProvider.DataPointCount > 0)
-                {
-                    // Ordered by time
-                    Assert.That(historyArray, Is.Ordered.By("Time"));
-
-                    // No repeating bars
-                    var timesArray = historyArray.Select(x => x.Time).ToArray();
-                    Assert.AreEqual(timesArray.Length, timesArray.Distinct().Count());
-                }
-
-                Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);
+                new HistoryRequest(now.Add(-period),
+                    now,
+                    dataType,
+                    symbol,
+                    resolution,
+                    marketHoursDatabase.GetExchangeHours(symbol.ID.Market, symbol, symbol.SecurityType),
+                    marketHoursDatabase.GetDataTimeZone(symbol.ID.Market, symbol, symbol.SecurityType),
+                    resolution,
+                    false,
+                    false,
+                    DataNormalizationMode.Adjusted,
+                    tickType)
             };
 
-            if (throwsException)
+            var historyArray = historyProvider.GetHistory(requests, TimeZones.Utc)?.ToArray();
+            if (invalidRequest)
             {
-                Assert.Throws<ArgumentNullException>(test);
+                Assert.Null(historyArray);
+                return;
             }
-            else
+
+            Assert.NotNull(historyArray);
+            foreach (var slice in historyArray)
             {
-                Assert.DoesNotThrow(test);
+                if (resolution == Resolution.Tick)
+                {
+                    foreach (var tick in slice.Ticks[symbol])
+                    {
+                        Log.Debug($"{tick}");
+                    }
+                }
+                else if (slice.QuoteBars.TryGetValue(symbol, out var quoteBar))
+                {
+                    Log.Debug($"{quoteBar}");
+                }
+                else if (slice.Bars.TryGetValue(symbol, out var tradeBar))
+                {
+                    Log.Debug($"{tradeBar}");
+                }
             }
+
+            if (historyProvider.DataPointCount > 0)
+            {
+                // Ordered by time
+                Assert.That(historyArray, Is.Ordered.By("Time"));
+
+                // No repeating bars
+                var timesArray = historyArray.Select(x => x.Time).ToArray();
+                Assert.AreEqual(timesArray.Length, timesArray.Distinct().Count());
+            }
+
+            Log.Trace("Data points retrieved: " + historyProvider.DataPointCount);
         }
     }
 }
