@@ -113,7 +113,7 @@ See the [brokerage development guide](https://www.quantconnect.com/tutorials/ope
     1. subscribe on level one update (quotes, trades, openInterest)
     2. Remarks:
         1. Use `IDataAggregator`;
-        2. Use different `ExchangeTimeZone` to different symbols - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerageMultiStreamSubscriptionManager.cs#L273);
+        2. Use different `ExchangeTimeZone` to different symbols - [TradeStation example](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.DataQueueHandler.cs);
         3. `IDataAggregator.Update()` - different tick data.
         4. use `DataQueueHandlerSubscriptionManager SubscriptionManager` from `abstract class BaseWebsocketsBrokerage` for Subscription/UnSubscription and count symbol, etc.
         5. Use `class BrokerageMultiWebSocketSubscriptionManager` to multiple connection.
@@ -199,9 +199,9 @@ See the [brokerage development guide](https://www.quantconnect.com/tutorials/ope
 - Use `class BrokerageMultiWebSocketSubscriptionManager` to implement multiple WebSocket connect (if brokerage support)
     - example [ByBit](https://github.com/QuantConnect/Lean.Brokerages.ByBit/blob/master/QuantConnect.BybitBrokerage/BybitBrokerage.cs#L261C47-L261C89);
     - write custom example [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/Streaming/StreamingTaskManager.cs)
-- Use [ExchangeTimeZone](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationExtensions.cs#L312) to specific Symbol to convert from UTC, example [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerageMultiStreamSubscriptionManager.cs#L225).
-- use [DefaultOrderBook](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerageMultiStreamSubscriptionManager.cs#L46) to keep High price in dictionary and emit new bid/ask price and size.
-    - example [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerageMultiStreamSubscriptionManager.cs#L175)
+- Use [ExchangeTimeZone](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationExtensions.cs#L312) to specific Symbol to convert from UTC, example [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.DataQueueHandler.cs).
+- use [LevelOneServiceManager](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.DataQueueHandler.cs) to track per-symbol bid/ask prices and sizes and emit quote ticks.
+    - example [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.DataQueueHandler.cs)
 - use `lock(...){ }` block when you call `IDataAggregator.Update()`.
 - Example of Re-Subscribe on Order updates - [TradeStation](https://github.com/QuantConnect/Lean.Brokerages.TradeStation/blob/master/QuantConnect.TradeStationBrokerage/TradeStationBrokerage.cs#L769)
     - Use `CancellationToken`;
