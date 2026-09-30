@@ -13,8 +13,9 @@
  * limitations under the License.
 */
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using System.Text.Json.Serialization;
 using QuantConnect.Data.Market;
 using QuantConnect.Orders;
 using QuantConnect.Securities;
@@ -30,6 +31,14 @@ namespace QuantConnect.Brokerages.Template.Tests
     /// </summary>
     public class BrokerageAlgorithmSettings
     {
+        /// <summary>
+        /// Serializer options that read enum values from their string names.
+        /// </summary>
+        private static readonly JsonSerializerOptions _enumAsString = new()
+        {
+            Converters = { new JsonStringEnumConverter() }
+        };
+
         private string _url;
         public Symbol OptionContract;
         public Symbol FutureContract;
@@ -190,24 +199,19 @@ namespace QuantConnect.Brokerages.Template.Tests
         public async void LoadConfigs()
         {
             var json = _url.DownloadData();
-            var jObject = JObject.Parse(json);
-            var jsonSecurities = jObject["module-specification"]["download"]["security-types"].ToString();
-            SecurityTypes = JsonConvert.DeserializeObject<List<SecurityType>>(jsonSecurities);
+            var jObject = JsonNode.Parse(json);
+            SecurityTypes = jObject["module-specification"]["download"]["security-types"].Deserialize<List<SecurityType>>(_enumAsString);
 
-            var jsonOrderTypes = jObject["order-types"].ToString();
-            var orderTypes = JsonConvert.DeserializeObject<List<string>>(jsonOrderTypes);
+            var orderTypes = jObject["order-types"].Deserialize<List<string>>();
             ConvertOrderTypes(orderTypes);
 
-            var jsonResolutions = jObject["module-specification"]["download"]["resolutions"].ToString();
-            Resolutions = JsonConvert.DeserializeObject<List<Resolution>>(jsonResolutions);
+            Resolutions = jObject["module-specification"]["download"]["resolutions"].Deserialize<List<Resolution>>(_enumAsString);
             Resolutions = Resolutions.Where(x => x != Resolution.Tick).ToList();
 
-            var jsonDataTypes = jObject["module-specification"]["download"]["data-types"].ToString();
-            var dataTypes = JsonConvert.DeserializeObject<List<string>>(jsonDataTypes);
+            var dataTypes = jObject["module-specification"]["download"]["data-types"].Deserialize<List<string>>();
             ConvertDataTypes(dataTypes);
 
-            var jsonMarkets = jObject["module-specification"]["download"]["markets"].ToString();
-            Markets = JsonConvert.DeserializeObject<List<string>>(jsonMarkets);
+            Markets = jObject["module-specification"]["download"]["markets"].Deserialize<List<string>>();
             ConfigSymbols();
         }
 
