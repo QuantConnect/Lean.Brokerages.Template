@@ -7,14 +7,18 @@ on:
     branches: [master]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.head_ref || github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    # A pull request from a fork gets no secrets: skip it, its branch is built when pushed to this repository
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # The push builds every branch its filter matches. A pull request builds only what the push cannot:
+    # a branch of this repository with a "/" in its name. A fork pull request gets no secrets and is skipped.
+    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && contains(github.head_ref, '/'))
     runs-on: self-hosted
+    concurrency:
+      group: brokerage-test-account
+      queue: max
     container:
         image: quantconnect/lean:foundation
         options: --cpus 12 --memory 12g
