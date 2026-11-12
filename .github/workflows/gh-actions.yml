@@ -12,8 +12,6 @@ concurrency:
 
 jobs:
   build:
-    # The push builds every branch its filter matches. A pull request builds only what the push cannot:
-    # a branch of this repository with a "/" in its name. A fork pull request gets no secrets and is skipped.
     if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && contains(github.head_ref, '/'))
     runs-on: self-hosted
     concurrency:
